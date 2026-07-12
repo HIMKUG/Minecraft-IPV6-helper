@@ -1,0 +1,3716 @@
+/* ========================================================================== Apple-style Liquid Glass Theme 功能不退化版本 — 保留所有原有 ID / class / DOM 结构，仅升级视觉与动效 4 层结构: Scene(场景) → Glass Shell(玻璃壳) → Refraction(折射) → Specular(高光) 优化字体渲染和动画性能 ========================================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* 优化字体渲染 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+    --color-accent: #6366F1;
+    --color-accent-bright: #818CF8;
+    --color-accent-dim: rgba(99, 102, 241, 0.3);
+    --color-blue: #4A90E2;
+    --color-blue-bright: #6BA9E8;
+    --color-red: #E81123;
+    --color-amber: #F59E0B;
+    --color-green: #10B981;
+    --color-text: #111827;
+    --color-text-secondary: #374151;
+    --color-text-tertiary: #4B5563;
+    /* 扩展语义色板（与 :root 既有主色一致，供状态/评分/标记使用，避免散落 hex） */
+    --color-emerald-800: #065f46;
+    --color-emerald-600: #059669;
+    --color-lime-800: #365314;
+    --color-green-600: #16a34a;
+    --color-green-500: #22c55e;
+    --color-red-800: #991b1b;
+    --color-red-700: #b91c1c;
+    --color-red-600: #dc2626;
+    --color-red-500: #ef4444;
+    --color-green-400: #4ade80;
+    --color-red-400: #f87171;
+    --color-lime-400: #bef264;
+    --color-on-accent: #ffffff;
+    --color-blue-900: #1e3a8a;
+    --color-blue-800: #1e40af;
+    --color-blue-500: #3b82f6;
+    --color-blue-400: #60a5fa;
+    --color-amber-700: #b45309;
+    --color-amber-600: #d97706;
+    --color-amber-900: #92400e;
+    /* 调试面板配色（替代内联硬编码 hex，遵循"禁止硬编码颜色"约定） */
+    --color-debug-fg: #0f0;
+    --color-debug-bg: rgba(0, 0, 0, 0.8);
+    --color-debug-btn-fg: #000;
+    --color-orange-500: #f97316;
+    --color-yellow-500: #eab308;
+    --color-border: rgba(31, 41, 55, 0.08);
+
+    /* === Liquid Glass tokens === */
+    --glass-tint: rgba(255, 255, 255, 0.32);
+    --glass-tint-soft: rgba(255, 255, 255, 0.18);
+    --glass-rim: rgba(255, 255, 255, 0.55);
+    --glass-rim-soft: rgba(255, 255, 255, 0.3);
+    --glass-blur: 26px;
+    --glass-blur-sm: 14px;
+    --glass-saturate: 170%;
+    --glass-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        0 24px 60px -12px rgba(31, 41, 55, 0.22),
+        0 10px 30px -6px rgba(31, 41, 55, 0.1);
+    --glass-shadow-soft:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 6px 20px -4px rgba(31, 41, 55, 0.1);
+
+    --radius: 20px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+    --font: 'Minecraft AE', 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+
+    /* === 设计系统：8px Grid 间距尺度 === */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+    --space-3xl: 64px;
+
+    /* === 字体层级系统 === */
+    --text-xs: 11px;
+    --text-sm: 12.5px;
+    --text-base: 14px;
+    --text-md: 15px;
+    --text-lg: 18px;
+    --text-xl: 22px;
+    --text-2xl: 28px;
+    --text-3xl: 36px;
+    --leading-tight: 1.2;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.7;
+
+    /* === 卡片样式系统 === */
+    --card-bg: rgba(255, 255, 255, 0.22);
+    --card-bg-hover: rgba(255, 255, 255, 0.32);
+    --card-border: rgba(255, 255, 255, 0.4);
+    --card-radius: 20px;
+    --card-radius-lg: 24px;
+    --card-padding: 20px;
+    --card-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 8px 24px -6px rgba(31, 41, 55, 0.12),
+        0 2px 8px rgba(31, 41, 55, 0.04);
+
+    /* 由 liquid-glass.js 写入的鼠标位置 */
+    --lg-lx: 50%;
+    --lg-ly: 0%;
+
+    /* === z-index 模态弹窗量表 === */
+    --z-titlebar: 1200;        /* 标题栏：必须在所有模态弹窗之上，确保拖拽/关闭按钮始终可用 */
+    --z-floating: 500;          /* 浮动按钮 */
+    --z-modal: 1000;            /* 普通模态弹窗 */
+    --z-modal-confirm: 1100;    /* 确认弹窗（高于普通模态） */
+    /* === 暗色主题支撑令牌（亮色值=原字面量，外观不变） === */
+    --c-gray-800: #1F2937;
+    --surface-04: rgba(255, 255, 255, 0.04);
+    --surface-05: rgba(255, 255, 255, 0.05);
+    --surface-12: rgba(255, 255, 255, 0.12);
+    --surface-16: rgba(255, 255, 255, 0.16);
+    --surface-18: rgba(255, 255, 255, 0.18);
+    --surface-20: rgba(255, 255, 255, 0.20);
+    --surface-22: rgba(255, 255, 255, 0.22);
+    --surface-25: rgba(255, 255, 255, 0.25);
+    --surface-30: rgba(255, 255, 255, 0.30);
+    --surface-35: rgba(255, 255, 255, 0.35);
+    --surface-40: rgba(255, 255, 255, 0.40);
+    --surface-42: rgba(255, 255, 255, 0.42);
+    --surface-45: rgba(255, 255, 255, 0.45);
+    --surface-50: rgba(255, 255, 255, 0.50);
+    --surface-60: rgba(255, 255, 255, 0.60);
+
+    /* 弹窗/覆盖层背景色（支持主题切换） */
+    --color-surface-overlay: rgba(30, 30, 35, 0.92);
+}
+
+/* ========================================================================== === 暗色主题 [data-theme="dark"] — 增量新增，零重构覆盖 :root 令牌 === 仅覆盖颜色类令牌，DOM 结构与其它样式一律不动，确保零回归风险 ========================================================================== */
+[data-theme="dark"] {
+    --color-text: #F9FAFB;
+    --color-text-secondary: #D1D5DB;
+    --color-text-tertiary: #9CA3AF;
+    --color-border: rgba(255, 255, 255, 0.12);
+
+    /* === Liquid Glass 暗色令牌 === */
+    --glass-tint: rgba(17, 24, 39, 0.42);
+    --glass-tint-soft: rgba(17, 24, 39, 0.28);
+    --glass-rim: rgba(255, 255, 255, 0.22);
+    --glass-rim-soft: rgba(255, 255, 255, 0.12);
+    --glass-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 24px 60px -12px rgba(0, 0, 0, 0.55),
+        0 10px 30px -6px rgba(0, 0, 0, 0.4);
+    --glass-shadow-soft:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 6px 20px -4px rgba(0, 0, 0, 0.4);
+
+    /* === 卡片暗色 === */
+    --card-bg: rgba(17, 24, 39, 0.5);
+    --card-bg-hover: rgba(31, 41, 55, 0.62);
+    --card-border: rgba(255, 255, 255, 0.14);
+    --card-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 24px 60px -12px rgba(0, 0, 0, 0.5);
+    /* === 组件表面令牌（暗色） === */
+    --c-gray-800: #D1D5DB;
+    --surface-04: rgba(17, 24, 39, 0.04);
+    --surface-05: rgba(17, 24, 39, 0.05);
+    --surface-12: rgba(17, 24, 39, 0.12);
+    --surface-16: rgba(17, 24, 39, 0.16);
+    --surface-18: rgba(17, 24, 39, 0.18);
+    --surface-20: rgba(17, 24, 39, 0.20);
+    --surface-22: rgba(17, 24, 39, 0.22);
+    --surface-25: rgba(17, 24, 39, 0.25);
+    --surface-30: rgba(17, 24, 39, 0.30);
+    --surface-35: rgba(17, 24, 39, 0.35);
+    --surface-40: rgba(17, 24, 39, 0.40);
+    --surface-42: rgba(17, 24, 39, 0.42);
+    --surface-45: rgba(17, 24, 39, 0.45);
+    --surface-50: rgba(17, 24, 39, 0.50);
+    --surface-60: rgba(17, 24, 39, 0.60);
+}
+
+/* 暗色下压暗背景层，保证玻璃质感与文字对比度 */
+[data-theme="dark"] #bg-wallpaper {
+    filter: brightness(0.45) saturate(1.05);
+}
+
+[data-theme="dark"] #rgb-bg {
+    opacity: 0.4;
+    filter: saturate(0.9) brightness(0.85);
+}
+
+/* ========================================================================== 文本层级系统（Text Hierarchy System） 统一语义化文字强调：加粗 / 斜体 / 下划线 / 状态色。 遵循 60-30-10 与"避免五颜六色"——强调色仅用于有意义的关键词与状态， 多数正文保持中性，靠字重 / 字号 / 间距建立层级。 ========================================================================== */
+.em-strong  { font-weight: 700; }
+.em-italic  { font-style: italic; }
+.em-underline {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.em-key {
+    font-weight: 700;
+    color: var(--color-accent);
+}
+.em-link {
+    color: var(--color-accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.em-ok     { color: var(--color-green); font-weight: 600; }
+.em-danger { color: var(--color-red);   font-weight: 600; }
+.em-warn   { color: var(--color-amber); font-weight: 600; }
+.em-soft   { color: var(--color-text-secondary); }
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font);
+    color: var(--color-text);
+    user-select: none;
+    -webkit-user-select: none;
+    /* html 也要透明，否则 WebView2 默认白底会覆盖 body 圆角 */
+    background: transparent;
+}
+
+body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    /* 不再用 body padding 预留标题栏高度（flex+padding 在 Tauri WebView 下 可能导致 #app 高度计算异常、主内容被压缩）。改为 #app 自身绝对定位填充标题栏下方。 圆角 28px 与背景 transparent 保持原始设计不动。 */
+    background: transparent !important;
+    /* 窗口级圆角 — decorations:false + transparent:true 已在 tauri.conf.json 配置 body 完全透明，圆角外区域不绘制任何内容，DWM 合成时透出桌面 */
+    border-radius: 28px;
+    overflow: hidden;
+    /* 触发硬件加速合成层，让 border-radius 裁剪传递到 DWM 像素合成阶段 */
+    transform: translateZ(0);
+    /* 移除 will-change: transform — 持久 will-change 浪费 GPU 显存 body 不需要持续合成层（动画时再加） */
+}
+
+/* 壁纸背景层 — absolute，受 body overflow:hidden 裁剪圆角 */
+#bg-wallpaper {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image: url('壁纸.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: repeat;
+    animation: bgSlowDrift 80s linear infinite;
+}
+
+@keyframes bgSlowDrift {
+    from { background-position: 0% 0%; }
+    to { background-position: 0% -800%; }
+}
+
+/* === Layer 1: RGB 幻彩背景（独立全屏层，做色相漂移） === 改为 absolute — body 的 overflow:hidden 才能裁剪圆角 加 will-change: transform 强制 GPU 合成，hover 之外不创建新层 */
+#rgb-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+        radial-gradient(circle at 15% 20%, hsla(0,   95%, 65%, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 85% 15%, hsla(60,  95%, 65%, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 80% 85%, hsla(180, 95%, 65%, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 10% 90%, hsla(280, 95%, 65%, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, hsla(120, 95%, 65%, 0.20) 0%, transparent 65%);
+    background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%, 200% 200%;
+    animation: rgbHueDrift 10s linear infinite, rgbPan 22s ease-in-out infinite;
+    filter: saturate(1.1);
+    opacity: 0.5;
+    transform: translateZ(0);
+}
+
+@keyframes rgbHueDrift {
+    0%   { filter: saturate(1.1) hue-rotate(0deg); }
+    25%  { filter: saturate(1.2) hue-rotate(90deg); }
+    50%  { filter: saturate(1.1) hue-rotate(180deg); }
+    75%  { filter: saturate(1.2) hue-rotate(270deg); }
+    100% { filter: saturate(1.1) hue-rotate(360deg); }
+}
+
+@keyframes rgbPan {
+    0%   { background-position: 0% 0%,   100% 0%, 100% 100%, 0% 100%, 50% 50%, 0% 0%; }
+    50%  { background-position: 30% 40%, 70% 20%, 70% 80%, 30% 70%, 60% 40%, 0% 0%; }
+    100% { background-position: 0% 0%,   100% 0%, 100% 100%, 0% 100%, 50% 50%, 0% 0%; }
+}
+
+/* 强制粒子 canvas 不拦截点击 */
+#particles-background canvas {
+    pointer-events: none !important;
+}
+#particles-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* 爆发粒子 Canvas — 必须在所有按钮后面 */
+#fx-canvas-fx {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    border-radius: inherit;
+}
+
+/* ========================================================================== Title Bar — 玻璃顶栏 ========================================================================== */
+#title-bar {
+    /* 修复标题栏偏移：脱离文档流，绝对定位于窗口最顶端， 不受 Tauri WebView 顶部内边距/安全区影响。圆角与玻璃背景保持原始设计不动。 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* 标题栏 z-index 提高到 1200，高于所有弹窗 */
+    z-index: var(--z-titlebar);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 38px;
+    padding: 0 14px;
+    background: var(--surface-25);
+    backdrop-filter: blur(3px) saturate(160%);
+    -webkit-backdrop-filter: blur(3px) saturate(160%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3),
+        0 4px 14px rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+    -webkit-app-region: drag;
+    app-region: drag;
+    /* 顶部圆角与窗口对齐（保持原始 28px 圆角，不改用户设计） */
+    border-radius: 28px 28px 0 0;
+}
+
+#title-controls,
+.title-btn {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
+
+#title-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#title-controls {
+    display: flex;
+    gap: 6px;
+}
+
+/* 标题栏按钮 — 同时具有 .liquidGlass-wrapper，需重置 width/100% */
+.title-btn.liquidGlass-wrapper {
+    width: 20px;
+    height: 20px;
+    min-width: 0;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                padding 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    padding: 0;
+    line-height: 1;
+    overflow: hidden;
+}
+
+/* 语言切换按钮样式 - 宽度50px，hover时扩展到65px */
+#btn-language.liquidGlass-wrapper {
+    width: 50px;
+}
+
+#btn-language.liquidGlass-wrapper:hover {
+    width: 65px;
+}
+
+.title-btn.liquidGlass-wrapper .liquidGlass-tint {
+    background: transparent;
+}
+
+/* hover 时向左延伸宽度，幅度居中 */
+.title-btn.liquidGlass-wrapper:hover {
+    width: 29px;
+    padding: 0 4px;
+}
+
+.title-btn.liquidGlass-wrapper:hover .liquidGlass-tint {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.title-btn-close.liquidGlass-wrapper:hover .liquidGlass-tint {
+    background: rgba(239, 68, 68, 0.8);
+}
+
+.title-btn-close.liquidGlass-wrapper:hover .liquidGlass-text {
+    color: var(--color-on-accent);
+}
+
+/* ========================================================================== Layer 2: 主玻璃壳 #app 恢复 结构：保留 position:relative 但不设 z-index（避免 stacking context） 内部有 #app-rgb-bg 提供 backdrop-filter 采样源 ========================================================================== */
+#app {
+    /* 修复主内容被压缩：脱离 flex 拉伸，改为绝对定位精确填充标题栏下方。 不再依赖 body 的 flex+padding 高度计算（Tauri WebView 下易异常）。 top:38px = 标题栏高度；left/right/bottom:0 + margin 形成 8/12/12/12 内缩， 与 几何一致。圆角 1.5rem(≈28px) 与玻璃背景保持原始设计不动。 */
+    position: absolute;
+    top: 38px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 8px 12px 12px 12px;
+    border-radius: 1.5rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 8px 32px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* === #app 内部专属 RGB 背景层 === 关键：作为 #app 的子元素，与内部按钮同处一个 stacking context 内部按钮 effect 层的 backdrop-filter 可以直接采样到这层内容 原 z-index:0 在 .page 移除 z-index:1 后会绘制在 .page 之上（覆盖内容）， 这里改为不设 z-index（auto），让 z-order 由 HTML 顺序决定： #app-rgb-bg 在 HTML 中位于 .page 之前 → 绘制在 .page 之下 ✓ */
+#app-rgb-bg {
+    position: absolute;
+    inset: 0;
+    /* z-index 移除 — 由 HTML 顺序保证 #app-rgb-bg 在 .page 之下 */
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 15% 20%, hsla(0,   95%, 65%, 0.35) 0%, transparent 50%),
+        radial-gradient(circle at 85% 15%, hsla(60,  95%, 65%, 0.35) 0%, transparent 50%),
+        radial-gradient(circle at 80% 85%, hsla(180, 95%, 65%, 0.35) 0%, transparent 50%),
+        radial-gradient(circle at 10% 90%, hsla(280, 95%, 65%, 0.35) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, hsla(120, 95%, 65%, 0.30) 0%, transparent 65%);
+    background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%, 200% 200%;
+    animation: rgbHueDrift 10s linear infinite, rgbPan 22s ease-in-out infinite;
+    filter: saturate(1.1);
+    opacity: 0.7;
+}
+
+/* 鼠标跟随光晕（黑色） */
+#app::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        520px circle at var(--lg-lx) var(--lg-ly),
+        rgba(0, 0, 0, 0.22),
+        transparent 55%
+    );
+    pointer-events: none;
+    opacity: 0.8;
+    /* z-index 改为 0，避免 -1 被父级 stacking context 遮挡 */
+    z-index: 0;
+    transition: opacity 0.4s ease;
+}
+
+/* 微噪点纹理 — 给玻璃一个"非纯色"质感 */
+#app::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    /* z-index 改为 0，避免 -1 被父级 stacking context 遮挡 */
+    z-index: 0;
+}
+
+/* ========================================================================== Pages — 内容承载层，保留原 display/fade 切换逻辑 【关键修复 — 深层次 bug】 原 .page { z-index: 1 } 会创建新的 stacking context，导致内部按钮的 .liquidGlass-effect 的 backdrop-filter 只能模糊 .page 内部的内容 （.page 背景透明、glass-card 背景也是浅色），完全看不到 body 的 wallpaper。 参考实现（毛玻璃图标）：按钮直接暴露在 body 下，没有任何中间 stacking context。 这里移除 z-index + will-change，让 effect 的 backdrop-filter 跨越 page 直达 body 背景。 【隐藏根因 — will-change: opacity 也会创建 stacking context】 与 z-index 等价！已移除。改用 transition: opacity 0.45s 已足够流畅。 ========================================================================== */
+.page {
+    contain: style;
+    opacity: 0;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateY(12px) scale(0.985);
+    filter: blur(8px);
+    pointer-events: none;
+}
+.page.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    pointer-events: auto;
+}
+.page.fade-in {
+    animation: pageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.page.fade-out {
+    animation: pageLeave 0.35s cubic-bezier(0.55, 0, 0.45, 1) forwards;
+}
+@keyframes pageEnter {
+    0%   { opacity: 0; transform: translateY(12px) scale(0.985); filter: blur(8px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes pageLeave {
+    0%   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    100% { opacity: 0; transform: translateY(-8px) scale(0.99); filter: blur(4px); }
+}
+
+/* 内部元素优雅进入 — 错位淡入 */
+.page.fade-in .page-title,
+.page.fade-in .page-subtitle,
+.page.fade-in .page-header-back,
+.page.fade-in .section-title,
+.page.fade-in .home-hero-card-text,
+.page.fade-in .home-hero-card-subtitle {
+    animation: elementSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.page.fade-in .page-title          { animation-delay: 0.06s; }
+.page.fade-in .page-subtitle       { animation-delay: 0.10s; }
+.page.fade-in .page-header-back    { animation-delay: 0.02s; }
+.page.fade-in .section-title       { animation-delay: 0.14s; }
+.page.fade-in .home-hero-card-text { animation-delay: 0.16s; }
+.page.fade-in .home-hero-card-subtitle { animation-delay: 0.20s; }
+
+/* glass-card 错位淡入（用 opacity 避免破坏 backdrop-filter） */
+.page.fade-in .glass-card {
+    animation: cardFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.18s;
+}
+.page.fade-in .glass-card:nth-child(2) { animation-delay: 0.24s; }
+.page.fade-in .glass-card:nth-child(3) { animation-delay: 0.30s; }
+.page.fade-in .glass-card:nth-child(4) { animation-delay: 0.36s; }
+.page.fade-in .glass-card:nth-child(5) { animation-delay: 0.42s; }
+
+@keyframes elementSlideUp {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes cardFadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+
+/* Back button 样式已移除 — 使用 liquidGlass-wrapper 结构 */
+
+/* ========================================================================== 通用卡片组件 — 统一的玻璃卡片视觉语言 【关键修复 — 】 原 .glass-card { backdrop-filter: blur(8px) } 会创建新的 stacking context， 进一步阻挡内部按钮 effect 的 backdrop-filter 看到 body 背景。 这里移除 backdrop-filter，glass-card 本身仍保持半透明背景（视觉上仍是玻璃卡）， 但放弃它自身的模糊效果（换取内部按钮能正确模糊 body 背景）。 .glass-card 的视觉替代： - 保留 background 半透明 + backdrop-filter 移除（避免创建 stacking context） - 保留 border + box-shadow + border-radius 玻璃质感 - 内部按钮的 effect 层会接管毛玻璃效果 ========================================================================== */
+.glass-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: var(--card-bg);
+    /* backdrop-filter 移除 — 避免创建 stacking context 阻挡 effect 看 body 背景 */
+    border: 1px solid var(--card-border);
+    border-radius: 1.5rem;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3),
+        0 6px 6px rgba(0, 0, 0, 0.1),
+        0 0 20px rgba(0, 0, 0, 0.05);
+    padding: var(--card-padding);
+    /* 移除 transform 过渡，改用 background/box-shadow/border-color， 避免 hover transform 创建 stacking context 阻挡 effect 看 body 背景 */
+    transition: background 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                border-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                border-radius 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    overflow: hidden;
+}
+
+/* 所有 glass-card hover 时背景增强 — 移除 transform: scale 避免创建 stacking context */
+.glass-card:hover {
+    border-radius: 1.75rem;
+    background: var(--card-bg-hover);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.4),
+        0 10px 10px rgba(0, 0, 0, 0.12),
+        0 0 30px rgba(0, 0, 0, 0.08);
+}
+
+/* 页面头部组件：返回按钮 + 标题一体化 收紧间距，减少垂直空间浪费 */
+.page-header {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-md);
+}
+
+.page-header-back {
+    align-self: center;
+    flex-shrink: 0;
+    width: auto;
+    min-width: 80px;
+    padding: 6px 16px;
+    font-size: var(--text-sm);
+}
+
+.page-title {
+    position: relative;
+    width: 100%;
+    font-size: clamp(1.5rem, 5vw, 1.95rem);
+    font-weight: 800;
+    margin: clamp(8px, 2vh, 18px) 0 0;
+    padding-bottom: 6px;
+    letter-spacing: 0.5px;
+    line-height: var(--leading-tight);
+    text-align: center;
+    color: var(--color-text);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* 标题下方装饰条已移除 —— 用户要求标题下不要任何带颜色的元素 */
+
+/* 页面底部副标题 — 原灰字从标题旁移到页面底部 */
+.page-footer-subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+    text-align: center;
+    margin-top: auto;
+    padding-top: var(--space-md);
+    word-break: break-all;
+    max-width: 100%;
+}
+
+/* ========================================================================== Logo Area ========================================================================== */
+.logo-area {
+    text-align: center;
+    margin: 0;
+}
+
+.logo-icon {
+    margin-bottom: var(--space-md);
+    display: flex;
+    justify-content: center;
+    filter: drop-shadow(0 4px 14px rgba(123, 200, 95, 0.5));
+}
+
+.logo-icon img {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    object-fit: cover;
+    box-shadow: 0 8px 24px rgba(31, 41, 55, 0.15);
+}
+
+.main-title {
+    font-size: var(--text-2xl);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-sm);
+    color: var(--color-text);
+    text-shadow: 0 2px 8px rgba(31, 41, 55, 0.15);
+    line-height: var(--leading-tight);
+}
+
+.sub-title {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+/* ========================================================================== 主页卡片布局 — 垂直堆叠，清晰分组 ========================================================================== */
+#page-home {
+    gap: var(--space-sm);
+    justify-content: center;
+    /* 上少下多的不对称 padding，让内容上移 使页面垂直中心落在"开始检测"和"专业测试网站"两个按钮之间 */
+    padding-top: clamp(18px, 4.5vh, 40px);
+    padding-bottom: clamp(48px, 12vh, 100px);
+}
+
+/* 主页标题区去框 — 标题只是标题，不需要玻璃卡片 */
+.home-hero-area {
+    max-width: 420px;
+    padding: var(--card-padding);
+    text-align: center;
+}
+
+.home-action-card {
+    max-width: 420px;
+    padding: var(--card-padding);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.home-action-card .btn-group {
+    max-width: 100%;
+}
+
+.home-action-card .status-bar {
+    margin-top: 0;
+    padding: 0;
+}
+
+/* ========================================================================== Buttons — macOS Liquid Glass Effect（毛玻璃图标精确版本） ========================================================================== */
+.btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 380px;
+}
+
+.btn-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 340px;
+}
+
+/* ========================================================================== macOS Liquid Glass Effect — 严格按参考文件实现 4 层结构: wrapper → effect(模糊+滤镜) → tint(遮罩) → shine(高光) → text(文字) 1. SVG滤镜 glass-distortion: feTurbulence + feDisplacementMap 液态扭曲 2. wrapper: 最外层，套住整个按钮 3. effect: backdrop-filter:blur(3px) + filter:url(#glass-distortion) 4. tint: rgba(255,255,255,0.25) 玻璃材质色 5. shine: 两层 inset 内阴影 (左上亮右下弱亮) 曲面反光 6. text: 文字层，z-index 最高 7. 动效: cubic-bezier(0.175, 0.885, 0.32, 2.2) 果冻回弹 ========================================================================== */
+.liquidGlass-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    overflow: hidden;
+    color: var(--color-text);
+    cursor: pointer;
+    box-shadow: 0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
+    /* 果冻过冲曲线仅用于 transform，其余属性用 ease，避免对非位移属性过冲 */
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                background 0.4s ease,
+                box-shadow 0.4s ease,
+                padding 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                border-radius 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    width: 100%;
+    border: 0;
+    background: transparent;
+    box-sizing: border-box;
+    text-align: center;
+    font-family: var(--font);
+    letter-spacing: 0.4px;
+    text-decoration: none;
+}
+
+/* 【effect 层】绝对定位铺满 wrapper - backdrop-filter: blur(12px) 背景模糊（增强到 12px 让效果明显） - filter: url(#glass-distortion) 引用 SVG 滤镜做液态扭曲 注意：不设 isolation:isolate，否则会创建新的 stacking context， 让 backdrop-filter 只能模糊自身内容而看不到背后元素 pointer-events: none 让点击穿透到 wrapper（关键修复） */
+.liquidGlass-effect {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    filter: url(#glass-distortion);
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* 【tint 层】绝对定位铺满，rgba(255,255,255,0.25) 玻璃材质色 */
+.liquidGlass-tint {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background: var(--surface-25);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* 【shine 层】绝对定位铺满，两层 inset 内阴影 (左上亮右下弱亮) 曲面反光 - inset 2px 2px 1px 0 rgba(255,255,255,0.5) 左上亮 - inset -1px -1px 1px 1px rgba(255,255,255,0.5) 右下弱亮 */
+.liquidGlass-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* 鼠标跟随光晕层 — 在 shine 之上、text 之下 */
+.btn-glow {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.18) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 3;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+    transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                height 0.5s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    opacity: 0;
+}
+
+.liquidGlass-wrapper:hover .btn-glow {
+    width: 220px;
+    height: 220px;
+    opacity: 0.5;
+}
+
+.liquidGlass-wrapper:active .btn-glow {
+    width: 320px;
+    height: 320px;
+    opacity: 0.8;
+    transition: width 0.15s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                height 0.15s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                opacity 0.15s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+/* 【text 层】按钮文字，z-index 最高，不能被模糊影响 pointer-events: none 让点击穿透到 wrapper（关键修复） */
+.liquidGlass-text {
+    position: relative;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--color-text);
+    pointer-events: none;
+}
+
+/* === 液态玻璃按钮变体 — 不同尺寸的圆角和 padding === */
+
+/* 标准按钮 — 类似参考的 .button */
+.liquidGlass-wrapper {
+    padding: 1rem 2.5rem;
+    border-radius: 3rem;
+    font-size: var(--text-base);
+}
+
+/* hover 液态膨胀：幅度居中（与之间），参考开发者卡片动效 贝塞尔曲线改为 cubic-bezier(0.175, 0.885, 0.32, 2.2) 轻微过冲不累积 */
+.liquidGlass-wrapper:hover {
+    padding: 1.3rem 2.9rem;
+    border-radius: 3.5rem;
+    transform: scale(1.022);
+}
+
+.liquidGlass-wrapper:active {
+    padding: 1.05rem 2.6rem;
+    border-radius: 3.2rem;
+    transform: scale(0.978);
+    transition: all 0.1s ease-out;
+}
+
+/* 小按钮变体（返回按钮等） */
+.liquidGlass-wrapper.page-header-back,
+.liquidGlass-wrapper.liquidGlass-back {
+    padding: 0.6rem 1.5rem;
+    border-radius: 2rem;
+    font-size: var(--text-sm);
+}
+
+/* 返回按钮弹跳幅度居中 */
+.liquidGlass-wrapper.page-header-back:hover,
+.liquidGlass-wrapper.liquidGlass-back:hover {
+    padding: 0.82rem 1.8rem;
+    border-radius: 2.38rem;
+    transform: scale(1.022);
+}
+
+/* ===== 按钮变体颜色 ===== */
+
+/* 免责声明按钮 — 红色 */
+.liquidGlass-red .liquidGlass-tint {
+    background: rgba(248, 113, 113, 0.25);
+}
+.liquidGlass-red .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 1px 1px rgba(220, 38, 38, 0.3);
+}
+
+/* 继续按钮 — 绿色调 */
+.liquidGlass-green .liquidGlass-tint {
+    background: rgba(16, 185, 129, 0.25);
+}
+.liquidGlass-green .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(16, 185, 129, 0.3);
+}
+.liquidGlass-green .liquidGlass-text {
+    color: var(--color-emerald-800);
+}
+
+/* 返回按钮 — 浅红调 */
+.liquidGlass-back .liquidGlass-tint {
+    background: rgba(239, 68, 68, 0.15);
+}
+.liquidGlass-back .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(239, 68, 68, 0.2);
+}
+.liquidGlass-back .liquidGlass-text {
+    color: var(--color-red-800);
+}
+
+/* 复制成功 */
+.liquidGlass-wrapper.copy-success .liquidGlass-tint {
+    background: rgba(16, 185, 129, 0.35);
+}
+.liquidGlass-wrapper.copy-success {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2), 0 8px 28px rgba(16, 185, 129, 0.3);
+    /* 移除 transform 的 !important，让基础 transform 仍能正常过渡 */
+    transform: scale(1.04);
+}
+
+/* 禁用状态 */
+.liquidGlass-wrapper:disabled .liquidGlass-tint,
+.liquidGlass-wrapper.disabled .liquidGlass-tint {
+    background: rgba(200, 200, 200, 0.35);
+}
+.liquidGlass-wrapper:disabled,
+.liquidGlass-wrapper.disabled {
+    box-shadow: inset 0px 0px 1px 1px rgba(255, 255, 255, 0.15);
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: 0.6;
+}
+.liquidGlass-wrapper:disabled:hover,
+.liquidGlass-wrapper.disabled:hover {
+    transform: none;
+}
+
+/* 开始检测按钮 — 主页核心 CTA，蓝色调液态玻璃 */
+#btn-start-detect {
+    padding: 1.3rem 2.8rem;
+    border-radius: 3.5rem;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+/* 开始检测按钮 hover 幅度居中 */
+#btn-start-detect:hover {
+    padding: 1.6rem 3.2rem;
+    border-radius: 4.1rem;
+    transform: scale(1.037);
+}
+
+#btn-start-detect .liquidGlass-tint {
+    background: rgba(74, 144, 226, 0.25);
+}
+
+#btn-start-detect .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.6),
+        inset -1px -1px 1px 1px rgba(74, 144, 226, 0.3);
+}
+
+#btn-start-detect .liquidGlass-text {
+    /* 亮色模式用黑色，暗色模式用白色 */
+    color: var(--color-text);
+}
+
+/* 专业测试按钮 — Q弹幅度居中 */
+.btn-pro-test {
+    padding: 1rem 2rem;
+    border-radius: 3rem;
+    font-size: var(--text-base);
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    /* 果冻过冲曲线仅用于 transform，其余属性用 ease */
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                padding 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                border-radius 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                background 0.4s ease,
+                box-shadow 0.4s ease;
+}
+
+.btn-pro-test:hover {
+    padding: 1.22rem 2.3rem;
+    border-radius: 3.5rem;
+    transform: scale(1.03);
+}
+
+.btn-pro-test:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+}
+
+.btn-pro-test .liquidGlass-tint {
+    background: rgba(163, 230, 53, 0.2);
+}
+
+.btn-pro-test .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.6),
+        inset -1px -1px 1px 1px rgba(163, 230, 53, 0.3);
+}
+
+.btn-pro-test .liquidGlass-text {
+    color: var(--color-lime-800);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.1);
+}
+
+/* 【C1 修复】暗色主题下彩色按钮文字改用浅色令牌，保证可读（亮色主题维持深色令牌以对比浅色按钮底） */
+[data-theme="dark"] .liquidGlass-green .liquidGlass-text { color: var(--color-green-400); }
+[data-theme="dark"] .liquidGlass-back .liquidGlass-text { color: var(--color-red-400); }
+[data-theme="dark"] .btn-pro-test .liquidGlass-text { color: var(--color-lime-400); }
+
+.status-bar {
+    margin-top: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 0;
+    line-height: var(--leading-normal);
+}
+
+/* ========================================================================== Step Indicators — 透镜感小玻璃点 ========================================================================== */
+.steps-container {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 6px 0;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    opacity: 0.4;
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.step-item.active { opacity: 1; }
+.step-item.done { opacity: 0.75; }
+
+.step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    width: 22px;
+}
+
+.step-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.65) 45%,
+        rgba(220, 220, 220, 0.5) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.8),
+        0 2px 6px rgba(31, 41, 55, 0.1);
+    transition: all 0.4s ease;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.step-item.active .step-dot {
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(147, 197, 253, 0.85) 50%,
+        rgba(74, 144, 226, 0.75) 100%);
+    border-color: rgba(74, 144, 226, 0.7);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.7),
+        0 0 0 4px rgba(74, 144, 226, 0.15),
+        0 0 16px rgba(74, 144, 226, 0.5);
+    animation: lgPulseDot 1.4s ease-in-out infinite;
+}
+
+.step-item.done .step-dot {
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(167, 243, 208, 0.85) 50%,
+        rgba(16, 185, 129, 0.75) 100%);
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.7),
+        0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.step-item.fail .step-dot {
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(252, 165, 165, 0.85) 50%,
+        rgba(232, 17, 35, 0.75) 100%);
+    border-color: rgba(232, 17, 35, 0.6);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.7),
+        0 2px 8px rgba(232, 17, 35, 0.25);
+}
+
+.step-item.warn .step-dot {
+    background: radial-gradient(circle at 30% 30%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(254, 240, 138, 0.85) 50%,
+        rgba(245, 158, 11, 0.75) 100%);
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.7),
+        0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.step-item.warn .step-status {
+    color: var(--color-amber);
+}
+
+@keyframes lgPulseDot {
+    0%, 100% {
+        box-shadow:
+            inset 0 1px 2px rgba(255, 255, 255, 0.7),
+            0 0 0 4px rgba(74, 144, 226, 0.15),
+            0 0 14px rgba(74, 144, 226, 0.4);
+    }
+    50% {
+        box-shadow:
+            inset 0 1px 2px rgba(255, 255, 255, 0.7),
+            0 0 0 8px rgba(74, 144, 226, 0.08),
+            0 0 24px rgba(74, 144, 226, 0.65);
+    }
+}
+
+.step-line {
+    width: 2px;
+    flex: 1;
+    min-height: 22px;
+    background: linear-gradient(180deg,
+        rgba(31, 41, 55, 0.1) 0%,
+        rgba(31, 41, 55, 0.05) 100%);
+    margin: 4px 0;
+    border-radius: 2px;
+}
+
+.step-item:last-child .step-line { display: none; }
+
+.step-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 0;
+}
+
+.step-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.step-status {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.step-item.active .step-status { color: var(--color-blue); }
+.step-item.done .step-status { color: var(--color-green); }
+.step-item.fail .step-status { color: var(--color-red); }
+
+/* ========================================================================== Config / Result / Fault 卡片 — 内部小玻璃 ========================================================================== */
+.config-section {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* 配置页卡片 — 添加毛玻璃效果 */
+.config-card {
+    max-width: 420px;
+    padding: var(--space-lg) var(--card-padding);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3),
+        0 6px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 1.5rem;
+}
+
+.config-card .config-section {
+    max-width: 100%;
+}
+
+/* 端口指南卡片 — 添加毛玻璃效果 */
+.port-hint-card {
+    max-width: 420px;
+    padding: var(--space-md) var(--card-padding);
+    margin-top: var(--space-md);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3),
+        0 6px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 1.5rem;
+}
+
+.port-hint-section {
+    width: 100%;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.config-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.config-label .hint {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+    letter-spacing: 0.2px;
+}
+
+.config-address-box {
+    background: var(--surface-35);
+    /* backdrop-filter 移除 — 避免创建 stacking context 阻挡 effect 看 body 背景 */
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    padding: 14px 18px;
+    font-size: var(--text-base);
+    font-family: 'Consolas', 'Courier New', monospace;
+    word-break: break-all;
+    color: var(--color-text);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3),
+        0 2px 8px rgba(0, 0, 0, 0.06);
+    user-select: text;
+    cursor: text;
+    transition: all 0.3s ease;
+}
+
+/* 结果页操作按钮组 — 统一按钮间距和大小 gap 改用 clamp 适配小窗口（合并了原先在小窗口媒体查询里的重复定义） */
+.result-actions {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(6px, 1.5vw, var(--space-sm));
+    width: 100%;
+    margin-top: var(--space-xs);
+}
+
+.result-actions > .liquidGlass-wrapper {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 14px;
+    font-size: var(--text-sm);
+}
+
+/* 合并两个 hint 为一个段落，减少堆叠感 */
+.result-hint {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-top: var(--space-sm);
+    line-height: var(--leading-relaxed);
+}
+
+.result-hint-accent {
+    color: var(--color-blue);
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.config-input {
+    background: var(--surface-35);
+    backdrop-filter: blur(3px) saturate(160%);
+    -webkit-backdrop-filter: blur(3px) saturate(160%);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    padding: 12px 18px;
+    font-size: var(--text-base);
+    font-family: var(--font);
+    color: var(--color-text);
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+/* 端口号专用：等宽字体 + 右对齐数字感 */
+#config-port {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-align: center;
+}
+
+#config-port::-webkit-outer-spin-button,
+#config-port::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#config-port:invalid {
+    border-color: var(--color-red);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 0 3px rgba(232, 17, 35, 0.2);
+}
+
+.config-input:focus {
+    border-color: var(--color-accent);
+    background: var(--surface-60);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        0 0 0 4px var(--color-accent-dim);
+}
+
+.result-section {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+/* 结果页卡片 — 收紧 padding，避免与 result-section 双重间距 */
+.result-card {
+    max-width: 420px;
+    padding: var(--space-lg) var(--card-padding);
+}
+
+.result-address-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    align-self: flex-start;
+}
+
+.result-address-box {
+    width: 100%;
+    background: linear-gradient(135deg,
+        rgba(190, 240, 90, 0.22) 0%,
+        rgba(255, 255, 255, 0.45) 100%);
+    border: 1px solid rgba(190, 240, 90, 0.4);
+    border-radius: 1.2rem;
+    padding: var(--space-md) var(--space-sm);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    font-family: 'Consolas', 'Courier New', monospace;
+    word-break: break-all;
+    text-align: center;
+    color: var(--color-text);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.4),
+        0 4px 18px rgba(163, 230, 53, 0.15);
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: text;
+    cursor: text;
+    transition: all 0.3s ease;
+}
+
+/* result-hint 已在上方统一定义，此处删除重复 */
+/* result-hint-accent 已在上方统一定义 */
+
+/* 合并重复的 fault-section 定义，统一间距 */
+.fault-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+.fault-desc {
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    padding: 0 10px;
+}
+
+.repair-log-container {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.log-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-text);
+}
+
+.repair-log {
+    background: rgba(0, 0, 0, 0.04);
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 14px;
+    padding: 14px 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    line-height: 1.8;
+    color: var(--color-text-secondary);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.repair-log .log-success { color: var(--color-green); font-weight: 600; }
+.repair-log .log-fail { color: var(--color-red); font-weight: 600; }
+.repair-log .log-info { color: var(--color-blue); }
+.repair-log .log-warn { color: var(--color-amber); font-weight: 600; }
+.repair-log > div {
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+}
+.repair-log > div:last-child { border-bottom: none; }
+
+/* ========================================================================== Latency Section — 统一 max-width 与 latency-card 一致 ========================================================================== */
+.latency-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    /* 减少输入框和按钮之间的间距 */
+    gap: 8px;
+}
+
+/* 诊断页输入提示 — 空输入时醒目提示 */
+.latency-input-hint {
+    font-size: var(--text-sm);
+    color: var(--color-amber-600);
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 12px;
+    background: rgba(245, 158, 11, 0.12);
+    border-radius: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.latency-input-hint.hidden {
+    display: none;
+}
+
+#btn-start-tracert:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    filter: grayscale(0.5);
+}
+
+/* 配置卡片/延迟卡片 hover 显示按钮 — Q弹入场动画 诊断按钮改为始终显示（不再隐藏） */
+.config-card #btn-generate-addr {
+    opacity: 1;
+    max-height: 80px;
+    margin-top: var(--space-md);
+    overflow: hidden;
+    pointer-events: auto;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                padding 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                border-radius 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                opacity 0.45s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                max-height 0.45s cubic-bezier(0.175, 0.885, 0.32, 2.2),
+                margin-top 0.45s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+/* 诊断按钮始终可见 */
+.latency-card #btn-start-tracert {
+    opacity: 1;
+    max-height: 80px;
+    margin-top: var(--space-md);
+    pointer-events: auto;
+}
+
+/* 配置卡片 hover → 显示生成按钮（始终显示，禁用态由文字提示） */
+.config-card:hover #btn-generate-addr {
+    opacity: 1;
+    max-height: 80px;
+    margin-top: var(--space-md);
+    pointer-events: auto;
+}
+.config-card:hover #btn-generate-addr:disabled {
+    opacity: 0;
+    max-height: 0;
+    pointer-events: none;
+}
+
+/* 诊断按钮始终可见，不再需要 hover 显示逻辑 */
+
+/* 按钮自身 hover 弹跳（幅度居中） */
+.config-card:hover #btn-generate-addr.liquidGlass-wrapper:hover,
+.latency-card:hover #btn-start-tracert.liquidGlass-wrapper:not(:disabled):hover {
+    transform: scale(1.022);
+}
+
+.latency-stats {
+    display: flex;
+    gap: 24px;
+    background: var(--surface-40);
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 14px;
+    padding: 14px 22px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        0 2px 8px rgba(31, 41, 55, 0.06);
+}
+
+.stats-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats-label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.stats-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: var(--surface-35);
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 2px 8px rgba(31, 41, 55, 0.06);
+}
+
+.latency-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.latency-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--surface-20);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.latency-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--color-text);
+}
+
+.latency-table tr:last-child td { border-bottom: none; }
+.latency-table tr:hover td { background: var(--surface-30); }
+
+.status-success { color: var(--color-green); font-weight: 600; }
+.status-timeout { color: var(--color-red); font-weight: 600; }
+.status-fail { color: var(--color-text-secondary); }
+
+/* ========================================================================== Scrollbar ========================================================================== */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(31, 41, 55, 0.15);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(31, 41, 55, 0.3); }
+
+/* ========================================================================== FX Canvas — 爆发粒子层（已在文件顶部定义，此处仅保留注释） ========================================================================== */
+
+/* ========================================================================== Detect Page — 全新的左右布局 + 毛玻璃框 + 状态文字 ========================================================================== */
+#page-detect {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: clamp(14px, 3vh, 28px) clamp(12px, 2.5vw, 28px);
+}
+
+.detect-fixed-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;    /* 垂直居中 */
+    width: 100%;
+    min-height: 100%;
+    overflow: visible;
+}
+
+/* 检测页头部：居中对齐，强调百分比数字 */
+.detect-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    width: 100%;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.detect-loading-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    width: auto;
+    height: auto;
+    flex-shrink: 0;
+}
+
+/* 百分比居中、黑色、更醒目 */
+.detect-title {
+    font-size: clamp(1.3rem, 4.5vw, 1.6rem);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin: 0;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+}
+
+/* 步骤卡片 — 继承 glass-card 视觉语言 检测完成后 detect-actions 显示会挤压此框。 原 max-height: 80% + flex: 1 在 flex 容器中会导致高度计算异常， 当下方按钮区显示后，本框被挤压但 max-height 仍试图占 80%， 造成"中间被砍断"的视觉。 改为 flex: 1 1 0 + min-height: 0，让高度完全由 flex 分配， 内部 steps-scroll-container 负责滚动。 */
+.steps-glass-box {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 380px;
+    max-height: 300px;
+    margin-bottom: var(--space-sm);
+    overflow: hidden;
+    min-height: 140px;
+    padding: var(--space-sm);
+    background: var(--surface-18);
+    border-radius: 1.5rem;
+}
+
+.steps-scroll-container {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 14px;
+}
+
+/* 检测完成状态文字 */
+.detect-status-text {
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 0;
+    flex-shrink: 0;
+    line-height: 1.5;
+}
+
+.detect-status-text.success {
+    color: var(--color-emerald-600);
+}
+
+.detect-status-text.warn {
+    color: var(--color-amber-600);
+}
+
+/* 检测完成操作按钮 — 统一宽度与步骤框一致 */
+.detect-actions {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-sm);
+    width: 100%;
+    max-width: 420px;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+}
+
+.detect-actions .liquidGlass-back {
+    flex: 1;
+}
+
+.detect-actions .liquidGlass-green {
+    flex: 1;
+}
+
+/* 检测失败操作按钮 — 统一宽度 */
+.detect-fail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    width: 100%;
+    max-width: 420px;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+}
+
+.detect-fail-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.detect-fail-row > .liquidGlass-wrapper {
+    flex: 1;
+}
+
+.detect-repair-group {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.detect-repair-group > .liquidGlass-wrapper {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 13px;
+}
+
+/* === 检测失败引导卡片 === */
+.detect-guide-box {
+    width: 100%;
+    max-width: 420px;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    background: var(--surface-12);
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--glass-shadow-soft);
+    flex-shrink: 0;
+    animation: guideFadeIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+@keyframes guideFadeIn {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.guide-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.guide-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.guide-buttons > .liquidGlass-wrapper {
+    width: 100%;
+    padding: 9px 14px;
+    font-size: 12.5px;
+}
+
+/* === 修复步骤卡片（流式显示当前修复哪一步） === */
+.repair-steps {
+    width: 100%;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    /* 设置 max-height: 320px 启用自身滚动； 在 .repair-modal-body 内则让外层滚动（max-height: none） */
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+/* 模态内层不限制高度，让外层 .repair-modal-body 负责滚动 */
+.repair-modal-body .repair-steps {
+    max-height: none;
+}
+
+.repair-step-item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--surface-12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 12px;
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    animation: stepSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+@keyframes stepSlideIn {
+    0% { opacity: 0; transform: translateX(-12px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ========================================================================== 历史详情步骤项 — 用于历史记录详情弹窗中的步骤展示 ========================================================================== */
+.history-detail-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background: var(--surface-04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    font-size: 13px;
+    overflow: hidden;
+    min-width: 0;
+}
+.history-detail-step .step-icon {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold;
+    flex-shrink: 0;
+}
+.history-detail-step.success .step-icon { background: rgba(34,197,94,0.2); color: var(--color-green-500); }
+.history-detail-step.fail .step-icon    { background: rgba(239,68,68,0.2); color: var(--color-red-500); }
+.history-detail-step.warn .step-icon    { background: rgba(245,158,11,0.2); color: var(--color-amber); }
+.history-detail-step .step-content { flex: 1; min-width: 0; }
+.history-detail-step .step-msg { color: rgba(255,255,255,0.9); margin-bottom: 2px; word-break: break-all; overflow-wrap: anywhere; }
+.history-detail-step .step-meta { color: rgba(255,255,255,0.5); font-size: 12px; word-break: break-all; overflow-wrap: anywhere; }
+.history-detail-step .step-target { color: rgba(96,165,250,0.8); word-break: break-all; overflow-wrap: anywhere; }
+.history-detail-step .step-latency { color: rgba(167,243,208,0.8); }
+
+.repair-step-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: rgba(74, 144, 226, 0.2);
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+.repair-step-item[data-status="running"] .repair-step-icon {
+    background: rgba(74, 144, 226, 0.32);
+}
+
+.repair-step-item[data-status="success"] .repair-step-icon {
+    background: rgba(16, 185, 129, 0.32);
+}
+
+.repair-step-item[data-status="fail"] .repair-step-icon {
+    background: rgba(232, 17, 35, 0.32);
+}
+
+.repair-step-item[data-status="warn"] .repair-step-icon {
+    background: rgba(245, 158, 11, 0.32);
+}
+
+/* Spinner */
+.repair-step-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    color: rgba(74, 144, 226, 0.9);
+    transition: color 0.4s ease;
+}
+
+.repair-step-item[data-status="running"] .repair-step-spinner {
+    animation: spin 0.8s linear infinite;
+}
+
+.repair-step-item[data-status="success"] .repair-step-spinner,
+.repair-step-item[data-status="fail"] .repair-step-spinner,
+.repair-step-item[data-status="warn"] .repair-step-spinner {
+    animation: none;
+    border: none;
+    color: currentColor;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.repair-step-item[data-status="success"] .repair-step-spinner::before {
+    content: '✓';
+    color: var(--color-green);
+    font-weight: 900;
+    font-size: 14px;
+}
+
+.repair-step-item[data-status="fail"] .repair-step-spinner::before {
+    content: '✗';
+    color: var(--color-red);
+    font-weight: 900;
+    font-size: 14px;
+}
+
+.repair-step-item[data-status="warn"] .repair-step-spinner::before {
+    content: '!';
+    color: var(--color-amber);
+    font-weight: 900;
+    font-size: 13px;
+}
+
+.repair-step-item[data-status="pending"] .repair-step-spinner {
+    border-color: rgba(107, 114, 128, 0.4);
+    color: rgba(107, 114, 128, 0.6);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.repair-step-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.repair-step-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 2px;
+    line-height: 1.4;
+}
+
+.repair-step-message {
+    font-size: 11.5px;
+    color: var(--color-text);
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.repair-step-item[data-status="running"] .repair-step-message {
+    color: var(--color-blue);
+}
+
+.repair-step-item[data-status="success"] .repair-step-message {
+    color: var(--color-green);
+}
+
+.repair-step-item[data-status="fail"] .repair-step-message {
+    color: var(--color-red);
+}
+
+.repair-step-item[data-status="warn"] .repair-step-message {
+    color: var(--color-amber);
+}
+
+/* === 修复验证区 === */
+.repair-verify {
+    width: 100%;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: verifyFadeIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+@keyframes verifyFadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.repair-verify-hint {
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    line-height: 1.5;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.repair-verify-hint.success {
+    background: rgba(16, 185, 129, 0.10);
+    color: var(--color-green);
+    border-color: rgba(16, 185, 129, 0.35);
+    font-weight: 600;
+}
+
+.repair-verify-hint.warn {
+    background: rgba(245, 158, 11, 0.10);
+    color: var(--color-amber-700);
+    border-color: rgba(245, 158, 11, 0.35);
+    font-weight: 600;
+}
+
+.repair-verify-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.repair-verify-buttons > .liquidGlass-wrapper {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+/* 继续按钮使用 liquidGlass-green 变体 */
+
+/* === 专业测试网站链接按钮 === */
+.home-link-section,
+.developer-section {
+    margin-top: 12px;
+    width: 100%;
+    max-width: 420px;
+}
+
+.home-link-section .liquidGlass-wrapper {
+    padding: 12px 24px;
+    font-size: var(--text-sm);
+}
+
+/* btn-link 系列样式已移除 — 使用 liquidGlass-wrapper 结构 */
+
+/* === 开发者展示区域 === */
+.developer-section {
+    margin-top: var(--space-sm);
+    width: 100%;
+    max-width: 420px;
+}
+
+.developer-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--card-padding);
+    background: var(--card-bg);
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    max-width: 100%;
+}
+
+.developer-card:hover {
+    background: var(--surface-45);
+    border-color: rgba(255, 255, 255, 0.7);
+    transform: translateX(4px);
+    box-shadow: 0 8px 24px rgba(31, 41, 55, 0.14);
+}
+
+.developer-avatar {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(31, 41, 55, 0.15);
+}
+
+.developer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.5), rgba(163, 230, 53, 0.5), rgba(236, 72, 153, 0.5));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: avatarRainbowGlow 3s linear infinite;
+}
+
+@keyframes avatarRainbowGlow {
+    0%   { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+.developer-card:hover .avatar-glow {
+    opacity: 0.6;
+}
+
+.developer-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.developer-name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: 0.5px;
+    animation: namePulse 2s ease-in-out infinite;
+}
+/* 仅 home 页显示时运行 */
+body:not(.page-home) .developer-name {
+    animation: none;
+}
+
+@keyframes namePulse {
+    0%, 100% {
+        text-shadow: 0 0 0 rgba(96, 165, 250, 0);
+    }
+    50% {
+        text-shadow: 0 0 12px rgba(96, 165, 250, 0.5);
+    }
+}
+
+.developer-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: var(--surface-50);
+    padding: 2px 8px;
+    border-radius: 999px;
+    align-self: flex-start;
+}
+
+.developer-arrow {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    transition: all 0.3s ease;
+}
+
+.developer-card:hover .developer-arrow {
+    color: var(--color-blue);
+    transform: translateX(6px);
+}
+
+/* ========================================================================== History & Disclaimer Pages ========================================================================== */
+.page-subtitle {
+    font-size: 11.5px;
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+    margin-top: 4px;
+    margin-bottom: 12px;
+    text-align: center;
+    word-break: break-all;
+    max-width: 100%;
+    padding: 0 12px;
+}
+
+/* history-list 宽度跟随父容器 */
+.history-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: var(--space-md);
+}
+
+.history-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+.history-card {
+    background: var(--surface-30);
+    /* 移除 backdrop-filter 避免创建 stacking context */
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 14px;
+    padding: 12px 16px;
+    transition: all 0.25s ease;
+    /* 点击卡片打开详情弹窗，改为 pointer */
+    cursor: pointer;
+}
+
+.history-card:hover {
+    background: var(--surface-40);
+    transform: translateY(-1px);
+}
+
+.history-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.history-card-status {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.history-card-status.success {
+    background: rgba(74, 222, 128, 0.25);
+    color: var(--color-green-600);
+}
+
+.history-card-status.fail {
+    background: rgba(248, 113, 113, 0.25);
+    color: var(--color-red-600);
+}
+
+.history-card-status.warn {
+    background: rgba(251, 191, 36, 0.25);
+    color: var(--color-amber-600);
+}
+
+.history-card-address {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    word-break: break-all;
+    margin-bottom: 4px;
+}
+
+.history-card-summary {
+    font-size: 11.5px;
+    color: var(--color-text-secondary);
+    opacity: 0.85;
+}
+
+/* history-footer 宽度与 card 一致，按钮右对齐 */
+.history-footer {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-sm);
+    padding: 0;
+}
+
+/* 故障页卡片 — 已合并 fault-section 到上方统一定义 */
+.fault-card {
+    max-width: 420px;
+    padding: var(--space-lg) var(--card-padding);
+}
+
+/* 延迟检测页卡片 — 已合并 latency-section 到上方统一定义 */
+.latency-card {
+    max-width: 420px;
+    padding: var(--space-lg) var(--card-padding);
+}
+
+/* 历史页外层容器 — 原类名 .history-card 与单条记录的 .history-card 冲突，导致两套定义互相覆盖（前者有背景+模糊，后者只有 max-width）。 重命名为 .history-list-card，避免冲突。 */
+.history-list-card {
+    width: 100%;
+    max-width: 420px;
+    padding: var(--space-md) var(--card-padding);
+}
+
+/* 免责声明页卡片 — 统一宽度 420px */
+.disclaimer-card {
+    max-width: 420px;
+    padding: var(--space-lg) var(--card-padding);
+    /* 改用 60vh 简化 calc(100vh - 180px) 适配，避免硬编码偏移 */
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* btn-danger 样式已移除 — 使用 liquidGlass-wrapper 结构 */
+
+/* === Disclaimer Page === 移除双重玻璃背景 — disclaimer-content 在 glass-card 内部， 不需要自己的背景+模糊（glass-card 已提供），只保留排版样式 */
+.disclaimer-content {
+    width: 100%;
+    /* max-width 600px 移除 — 不能超出 disclaimer-card 的 420px */
+    /* background + backdrop-filter + border 移除 — 避免与 glass-card 双重玻璃 */
+    border-radius: 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--color-text);
+    margin-bottom: 0;
+}
+
+.disclaimer-content h3 {
+    position: relative;
+    font-size: clamp(14px, 1.9vh, 16px);
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 18px 0 10px;
+    padding: 2px 0 8px 12px;
+    border-left: 3px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    letter-spacing: 0.3px;
+}
+
+.disclaimer-content h3:first-child {
+    margin-top: 0;
+}
+
+.disclaimer-content p {
+    margin: 8px 0;
+    color: var(--c-gray-800);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.disclaimer-content ul {
+    margin: 8px 0 8px 20px;
+    padding: 0;
+}
+
+.disclaimer-content li {
+    margin: 4px 0;
+    color: var(--c-gray-800);
+}
+
+.disclaimer-content strong {
+    font-weight: 700;
+}
+
+.disclaimer-content code {
+    background: rgba(96, 165, 250, 0.12);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--color-blue-800);
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+/* === First-Run Modal === */
+#page-first-run {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    /* 模态弹窗 z-index 使用变量统一管理 */
+    z-index: var(--z-modal);
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    /* 不再继承 .page 的样式，作为独立 modal */
+    flex-direction: column;
+    opacity: 1;
+    overflow: hidden;
+}
+
+#page-first-run.active {
+    /* 移除 !important，first-run modal 自身定义已确保 display 优先级 */
+    display: flex;
+}
+
+.first-run-modal {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface-42);
+    backdrop-filter: blur(24px) saturate(170%);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 22px;
+    padding: 28px 26px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    animation: modalPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+@keyframes modalPopIn {
+    from { opacity: 0; transform: scale(0.85) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.first-run-icon {
+    font-size: 48px;
+    line-height: 1;
+    animation: iconBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.first-run-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+    text-align: center;
+    margin: 0;
+}
+
+.first-run-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin: 0;
+}
+
+.first-run-disclaimer-preview {
+    width: 100%;
+    background: var(--surface-30);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--c-gray-800);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.first-run-disclaimer-preview p {
+    margin: 6px 0;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.first-run-buttons {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.first-run-buttons > .liquidGlass-wrapper {
+    flex: 1;
+}
+
+/* btn-agree / btn-disagree 样式已移除 — 使用 liquidGlass-wrapper 结构 */
+
+/* === Floating Buttons (历史 + 声明) === */
+/* 浮动按钮：position:fixed 必须保留，否则 left/bottom/right 失效 */
+.floating-btns {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    /* 浮动按钮 z-index 使用变量统一管理 */
+    z-index: var(--z-floating);
+}
+
+.floating-btn.liquidGlass-wrapper {
+    position: fixed;            /* 关键：保留 fixed 定位 */
+    pointer-events: auto;
+    width: auto;                /* 覆盖 wrapper 的 width:100% */
+    min-width: 0;
+    padding: 0.5rem 1.2rem;     /* 覆盖 wrapper 的 padding:1rem 2.5rem */
+    border-radius: 2rem;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    overflow: hidden;
+}
+
+/* 浮动按钮弹跳幅度居中 */
+.floating-btn.liquidGlass-wrapper:hover {
+    padding: 0.7rem 1.45rem;
+    border-radius: 2.35rem;
+}
+
+.floating-btn.liquidGlass-wrapper:active {
+    padding: 0.55rem 1.25rem;
+    border-radius: 2.1rem;
+    transition: all 0.1s ease-out;
+}
+
+.floating-btn-history {
+    left: 28px;
+    bottom: 28px;
+}
+
+.floating-btn-history:hover {
+    transform: translateY(-2px) scale(1.06);
+}
+
+.floating-btn-latency {
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+}
+
+.floating-btn-latency:hover {
+    transform: translateX(-50%) translateY(-2px) scale(1.06);
+}
+
+.floating-btn-latency:active {
+    transform: translateX(-50%) translateY(0) scale(0.95);
+}
+
+.floating-btn-disclaimer {
+    right: 28px;
+    bottom: 28px;
+    color: var(--color-red-600);
+    max-width: 140px;  /* 限制宽度防止英文模式下与中间按钮重叠 */
+}
+
+.floating-btn-disclaimer:hover {
+    transform: translateY(-2px) scale(1.06);
+    color: var(--color-red-700);
+}
+
+/* #btn-start-detect 重复定义已合并至主定义（见 845 行附近）， 小窗口压缩由 @media (max-height: 580px), (max-width: 400px) 统一处理 */
+
+/* === Port Hint Section (端口填写提示) === 移除双重玻璃 — 在 glass-card 内部不需要自己的背景+模糊 */
+.port-hint-section {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.port-hint-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.08);
+}
+
+.port-hint-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.port-hint-step {
+    font-size: 13px;
+    color: var(--color-text);
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.step-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-blue);
+    color: var(--color-on-accent);
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.port-hint-step kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    background: var(--surface-60);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+    color: var(--color-text);
+}
+
+.port-hint-step code {
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--color-blue);
+}
+
+.port-hint-note {
+    font-size: 12.5px;
+    color: var(--color-text);
+    line-height: 1.6;
+    padding-top: 10px;
+    border-top: 1px solid rgba(31, 41, 55, 0.08);
+}
+
+.port-hint-note p {
+    margin: 6px 0;
+}
+
+.port-hint-note strong {
+    color: var(--color-text);
+    font-weight: 700;
+}
+
+.port-hint-note kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    background: var(--surface-60);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+    color: var(--color-text);
+}
+
+/* === Custom Confirm Modal === */
+.confirm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 确认弹窗 z-index 使用变量统一管理 */
+    z-index: var(--z-modal-confirm);
+    padding: 24px;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    /* 深度修复：默认不拦截点击。这是按钮失效的真正根因 —— 弹窗默认 display:flex + opacity:0，若 closeConfirmModal 的 setTimeout(320ms) 因任何原因未执行，透明遮罩会永久拦截全屏点击。 只有 .active 状态才接收事件。 */
+    pointer-events: none;
+}
+.confirm-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.confirm-modal-overlay.closing {
+    opacity: 0;
+    pointer-events: none;
+}
+.confirm-modal-overlay .confirm-modal {
+    transform: scale(0.92) translateY(8px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.confirm-modal-overlay.active .confirm-modal {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.confirm-modal {
+    width: 100%;
+    max-width: 360px;
+    background: var(--surface-45);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 20px;
+    padding: 24px 22px;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    animation: modalPopIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+.confirm-icon {
+    font-size: 36px;
+    line-height: 1;
+    animation: iconBounce 1.2s ease-in-out infinite;
+}
+
+.confirm-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.confirm-message {
+    font-size: 13px;
+    color: var(--color-text);
+    text-align: center;
+    margin: 0;
+    line-height: 1.5;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.confirm-message.danger {
+    color: var(--color-red-600);
+    font-weight: 600;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.confirm-buttons > .liquidGlass-wrapper {
+    flex: 1;
+}
+
+/* btn-cancel / btn-confirm-danger 样式已移除 — 使用 liquidGlass-wrapper 结构 */
+
+/* === 修复模态弹窗（仿"清除历史记录"对话框样式） === */
+.repair-modal-overlay {
+    /* 弹窗打开/关闭动画 — scale + fade + blur 模糊退出 */
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                backdrop-filter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    /* 深度修复：防御性 pointer-events。display:none 已可阻止点击， 但若 JS 曾把 display 改成 flex 后关闭流程异常，opacity:0 的遮罩仍会拦截。 加此规则确保只有 .active 才接收事件。 */
+    pointer-events: none;
+}
+.repair-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+.repair-modal-overlay.closing {
+    opacity: 0;
+    pointer-events: none;
+}
+.repair-modal-overlay .repair-modal-card,
+.repair-modal-overlay .history-detail-card {
+    transform: scale(0.92) translateY(8px);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.repair-modal-overlay.active .repair-modal-card,
+.repair-modal-overlay.active .history-detail-card {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+.repair-modal-overlay.closing .repair-modal-card,
+.repair-modal-overlay.closing .history-detail-card {
+    transform: scale(0.96) translateY(4px);
+    opacity: 0;
+}
+
+.repair-modal {
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    background: var(--surface-16);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+@keyframes modalSlideUp {
+    0% { opacity: 0; transform: translateY(40px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.repair-modal-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.repair-modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+}
+
+.repair-modal-subtitle {
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.repair-modal-body {
+    padding: 16px 22px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 50vh;
+    scrollbar-width: thin;
+}
+
+.repair-modal-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* 复用 的 .repair-step-item 样式（在模态里也能用） */
+.repair-modal-steps .repair-step-item {
+    margin: 0;
+}
+
+.repair-modal-footer {
+    padding: 14px 22px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+    background: var(--surface-05);
+    animation: footerSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+@keyframes footerSlideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.repair-modal-summary {
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-align: center;
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.repair-modal-summary.success {
+    color: var(--color-green);
+    background: rgba(16, 185, 129, 0.10);
+    border: 1px solid rgba(16, 185, 129, 0.30);
+}
+
+.repair-modal-summary.warn {
+    color: var(--color-amber-700);
+    background: rgba(245, 158, 11, 0.10);
+    border: 1px solid rgba(245, 158, 11, 0.30);
+}
+
+.repair-modal-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.repair-modal-buttons > .liquidGlass-wrapper {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 13px;
+}
+
+/* === 红色按钮样式（用于"无视风险后继续"） === */
+/* wrapper 背景保持透明，颜色由 tint 层提供 */
+.liquidGlass-red .liquidGlass-tint {
+    background: linear-gradient(135deg, rgba(232, 17, 35, 0.12) 0%, rgba(180, 30, 50, 0.16) 100%);
+}
+
+.liquidGlass-red .liquidGlass-text {
+    color: var(--color-red);
+    text-shadow: 0 1px 2px rgba(232, 17, 35, 0.3);
+}
+
+.liquidGlass-red:hover .liquidGlass-tint {
+    background: linear-gradient(135deg, rgba(232, 17, 35, 0.22) 0%, rgba(180, 30, 50, 0.26) 100%);
+}
+
+.liquidGlass-red:hover {
+    box-shadow: 0 6px 20px rgba(232, 17, 35, 0.32);
+}
+
+.liquidGlass-red .btn-glow {
+    background: radial-gradient(circle, rgba(232, 17, 35, 0.4) 0%, transparent 70%);
+}
+
+.liquidGlass-red:hover .btn-glow {
+    background: radial-gradient(circle, rgba(232, 17, 35, 0.6) 0%, transparent 70%);
+}
+
+/* ========================================================================== 柔性框架 (Fluid Layout) — 适配不同窗口缩放 核心策略： 1. clamp() 让 padding/gap/字号随视口自适应 2. 媒体查询在极小窗口下进一步压缩 3. flex-shrink + min-height:0 让内容区可滚动不溢出 4. port-hint 等长内容卡片在配置页可独立滚动 ========================================================================== */
+
+/* 覆盖 .page 的固定 padding/gap 为 clamp 自适应值 */
+.page {
+    padding: clamp(12px, 3vh, 32px) clamp(10px, 2.5vw, 24px);
+    gap: clamp(8px, 1.8vh, 16px);
+    min-height: 0;              /* flex 子项可缩小，允许内部滚动 */
+}
+
+/* 内容多的页面允许垂直滚动，避免内容看不全 */
+#page-home,
+#page-latency,
+#page-history,
+#page-config,
+#page-disclaimer,
+#page-fault,
+#page-result {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.page-title {
+    font-size: clamp(1.5rem, 5vw, 1.9rem);
+    margin-bottom: clamp(2px, 0.6vh, 6px);
+}
+
+.page-subtitle {
+    font-size: clamp(10px, 1.6vh, 12.5px);
+}
+
+.page-header {
+    margin-bottom: clamp(8px, 2vh, 24px);
+    gap: clamp(4px, 1vh, 10px);
+}
+
+/* glass-card 在小窗口下缩小 max-width 与 padding */
+/* 已合并到主 .glass-card 定义中，避免重复定义 */
+
+.home-hero-card {
+    max-width: clamp(260px, 88vw, 380px);
+    padding: clamp(16px, 3vh, 32px) clamp(12px, 2.5vw, 20px);
+}
+
+/* logo 图标随窗口缩放 */
+.logo-icon img {
+    width: clamp(48px, 9vh, 64px);
+    height: clamp(48px, 9vh, 64px);
+}
+
+.main-title {
+    font-size: clamp(20px, 4vh, 28px);
+}
+
+/* 配置页 / 延迟页 / 历史页等内容多的页面：让 glass-card 可伸缩 */
+#page-config .glass-card,
+#page-latency .glass-card,
+#page-history .glass-card,
+#page-disclaimer .glass-card,
+#page-fault .glass-card {
+    flex-shrink: 0;              /* 卡片本身不压缩，靠页面滚动 */
+    width: 100%;
+}
+
+/* port-hint-card 长内容：内部可滚动，避免撑高页面 */
+.port-hint-card {
+    max-height: none;           /* 跟随页面滚动即可 */
+}
+
+.port-hint-step,
+.port-hint-note p {
+    font-size: clamp(11px, 1.7vh, 13px);
+    line-height: 1.5;
+}
+
+/* 延迟表格在小窗口下水平滚动 */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.latency-table {
+    font-size: clamp(10px, 1.6vh, 13px);
+}
+
+/* === 极小窗口（高度 < 580px 或宽度 < 400px）进一步压缩 === */
+@media (max-height: 580px), (max-width: 400px) {
+    .page {
+        padding: 10px 10px;
+        gap: 6px;
+    }
+    .page-header {
+        margin-bottom: 6px;
+        gap: 4px;
+    }
+    .page-header-back {
+        padding: 4px 14px;
+        font-size: 11px;
+    }
+    .glass-card {
+        padding: 10px;
+        border-radius: 1.1rem;
+    }
+    .liquidGlass-wrapper {
+        padding: 0.7rem 1.8rem;
+        font-size: 12.5px;
+    }
+    .liquidGlass-wrapper:hover {
+        padding: 0.88rem 2rem;
+    }
+    .page-header-back.liquidGlass-wrapper,
+    .page-header-back.liquidGlass-wrapper:hover {
+        padding: 4px 14px;
+    }
+    #btn-start-detect {
+        padding: 0.9rem 2rem;
+        font-size: 14px;
+    }
+    /* 同时覆盖 #btn-start-detect 的 hover padding 避免跳变 */
+    #btn-start-detect:hover {
+        padding: 1rem 2.2rem;
+    }
+    .logo-icon img {
+        width: 44px;
+        height: 44px;
+    }
+    .main-title {
+        font-size: 18px;
+    }
+    .port-hint-step,
+    .port-hint-note p {
+        font-size: 10.5px;
+        line-height: 1.4;
+    }
+    /* 小窗口下压缩步骤框高度（避免与基础 min-height: 120px 冲突） */
+    .steps-glass-box {
+        min-height: 100px;
+        max-height: 180px;
+    }
+}
+
+/* === 中等窗口（400-480px 宽）适度压缩 === */
+@media (max-width: 480px) {
+    .page {
+        padding: 16px 14px;
+    }
+    .glass-card {
+        max-width: 96vw;
+    }
+}
+
+/* === 高窗口（> 800px）放宽留白 === */
+@media (min-height: 800px) {
+    .page {
+        padding: 24px 28px;
+        gap: 20px;
+    }
+    .home-hero-card {
+        padding: 24px 28px;
+    }
+}
+
+/* === 确保结果页地址框在小窗口下不溢出 === */
+.result-address-box,
+.config-address-box {
+    word-break: break-all;
+    overflow-wrap: break-word;
+    font-size: clamp(11px, 1.8vh, 14px);
+    line-height: 1.5;
+    padding: clamp(8px, 1.5vh, 14px) clamp(10px, 2vw, 16px);
+}
+
+/* === result-actions 重复定义已合并至主 .result-actions（见上方） === */
+
+/* === 历史卡片 / 免责声明 在小窗口下压缩 === */
+.history-card,
+.disclaimer-content {
+    font-size: clamp(11px, 1.7vh, 13px);
+}
+
+/* === 检测页步骤框小窗口压缩已移至 @media (max-height: 580px), (max-width: 400px) === */
+
+/* ========================================================================== v6-probe 延迟诊断卡片样式 ========================================================================== */
+
+.probe-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid rgba(74, 144, 226, 0.25);
+    border-top-color: var(--color-blue);
+    border-radius: 50%;
+    animation: probeSpin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes probeSpin { to { transform: rotate(360deg); } }
+
+.probe-summary {
+    display: none; /* 默认隐藏，仅在有诊断结果时由 JS 显示 */
+    /* summary 隐藏时不占空间 */
+    margin: 4px 0;
+    padding: 12px 14px;
+    background: var(--surface-30);
+    border-radius: 0.8rem;
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    white-space: pre-line;
+    line-height: 1.6;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* 综合评分展示区 */
+.probe-score-box {
+    display: none; /* 默认隐藏，由 JS 在探针成功（score>0）后显示 */
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    background: var(--surface-04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+.probe-score-ring {
+    position: relative;
+    width: 72px; height: 72px;
+    flex-shrink: 0;
+}
+.score-svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+}
+.score-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 6;
+}
+.score-ring-fill {
+    fill: none;
+    stroke: var(--color-green-500);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 264;
+    stroke-dashoffset: 264;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s ease;
+}
+.probe-score-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+.probe-score-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1;
+}
+.probe-score-unit {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+}
+.probe-score-info {
+    flex: 1;
+}
+.probe-score-label {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.probe-score-meta {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* probe-results 与 latency-card 宽度对齐 */
+.probe-results {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.8vh, 14px);
+    width: 100%;
+    max-width: 420px;
+    margin-top: var(--space-sm);
+}
+
+.probe-card {
+    padding: clamp(12px, 2.5vh, 18px);
+}
+
+.probe-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.probe-card-title {
+    font-size: var(--text-md);
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: 0.3px;
+}
+
+.probe-card-subtitle {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+
+.probe-quality {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.probe-quality-good {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--color-emerald-800);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.probe-quality-warn {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--color-amber-900);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.probe-quality-bad {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--color-red-800);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.probe-quality-info {
+    background: rgba(74, 144, 226, 0.2);
+    color: var(--color-blue-800);
+    border: 1px solid rgba(74, 144, 226, 0.4);
+}
+
+/* 卡片左侧色条 */
+.probe-card.probe-good { border-left: 3px solid var(--color-green); }
+.probe-card.probe-warn { border-left: 3px solid var(--color-amber); }
+.probe-card.probe-bad  { border-left: 3px solid var(--color-red); }
+.probe-card.probe-info { border-left: 3px solid var(--color-blue); }
+
+.probe-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.probe-metric-cell {
+    background: var(--surface-25);
+    border-radius: 0.6rem;
+    padding: 8px 6px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.probe-metric-label {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    margin-bottom: 3px;
+    font-weight: 500;
+}
+
+.probe-metric-value {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.probe-samples {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    text-align: right;
+}
+
+.probe-path-line {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    background: var(--surface-20);
+    padding: 8px 10px;
+    border-radius: 0.6rem;
+    word-break: break-all;
+    line-height: 1.5;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+}
+
+.probe-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--color-red);
+    font-size: var(--text-sm);
+}
+
+/* 小窗口下 probe 指标网格改为 2 列 */
+@media (max-width: 360px) {
+    .probe-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .probe-card-title {
+        font-size: var(--text-sm);
+    }
+}
+
+/* ========================================================================== 8-bit 像素点 loading 动画 — 基于 loading.txt 参考代码重写 16 个方块围成圆形，按 ball-8bits 关键帧闪烁，形成 8-bit 旋转球效果 放大尺寸 (container 40px, ball 10px)，百分比数字居中在动画内 ========================================================================== */
+.loading-8bit,
+.loading-8bit > div {
+    position: relative;
+    box-sizing: border-box;
+}
+
+.loading-8bit {
+    display: block;
+    font-size: 0;
+    color: var(--color-blue);
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    overflow: visible;
+}
+
+.loading-8bit > div {
+    display: inline-block;
+    float: none;
+    background-color: currentColor;
+    border: 0 solid currentColor;
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border-radius: 0;
+    opacity: 0;
+    transform: translate(100%, 100%);
+    animation: ball-8bits-8bit 1s 0s ease infinite;
+}
+
+/* 16 个方块按圆形均匀分布（百分比定位，来自 loading.txt 参考代码） */
+.loading-8bit > div:nth-child(1)  { top: -100%; left: 0;                 animation-delay: -0.9375s; }
+.loading-8bit > div:nth-child(2)  { top: -100%; left: 33.3333333333%;    animation-delay: -0.875s; }
+.loading-8bit > div:nth-child(3)  { top: -66.6666666667%; left: 66.6666666667%; animation-delay: -0.8125s; }
+.loading-8bit > div:nth-child(4)  { top: -33.3333333333%; left: 100%;    animation-delay: -0.75s; }
+.loading-8bit > div:nth-child(5)  { top: 0;     left: 100%;              animation-delay: -0.6875s; }
+.loading-8bit > div:nth-child(6)  { top: 33.3333333333%; left: 100%;     animation-delay: -0.625s; }
+.loading-8bit > div:nth-child(7)  { top: 66.6666666667%; left: 66.6666666667%; animation-delay: -0.5625s; }
+.loading-8bit > div:nth-child(8)  { top: 100%;  left: 33.3333333333%;    animation-delay: -0.5s; }
+.loading-8bit > div:nth-child(9)  { top: 100%;  left: 0;                 animation-delay: -0.4375s; }
+.loading-8bit > div:nth-child(10) { top: 100%;  left: -33.3333333333%;   animation-delay: -0.375s; }
+.loading-8bit > div:nth-child(11) { top: 66.6666666667%; left: -66.6666666667%; animation-delay: -0.3125s; }
+.loading-8bit > div:nth-child(12) { top: 33.3333333333%; left: -100%;    animation-delay: -0.25s; }
+.loading-8bit > div:nth-child(13) { top: 0;     left: -100%;             animation-delay: -0.1875s; }
+.loading-8bit > div:nth-child(14) { top: -33.3333333333%; left: -100%;   animation-delay: -0.125s; }
+.loading-8bit > div:nth-child(15) { top: -66.6666666667%; left: -66.6666666667%; animation-delay: -0.0625s; }
+.loading-8bit > div:nth-child(16) { top: -100%; left: -33.3333333333%;   animation-delay: 0s; }
+
+@keyframes ball-8bits-8bit {
+    0%  { opacity: 1; }
+    50% { opacity: 1; }
+    51% { opacity: 0; }
+}
+
+/* 检测页 loading 区 — 居中包含 loading 动画 padding 留足空间防止 8-bit 球体溢出与下方 UI 重叠 */
+.detect-loading-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 0 24px;
+    gap: 0;
+    flex-shrink: 0;
+}
+/* 百分比数字绝对居中在 loading 动画正中间，使用像素字体 */
+.detect-loading-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--color-text);
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 5;
+    font-family: 'Minecraft AE', 'Consolas', 'Courier New', monospace;
+    text-shadow: 0 0 6px rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.3);
+    white-space: nowrap;
+}
+
+/* ========================================================================== 无障碍支持 — 尊重用户的减少动画偏好 ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    .page, .page.fade-in, .page.fade-out,
+    .page.fade-in .page-title, .page.fade-in .page-subtitle,
+    .page.fade-in .glass-card, .page.fade-in .section-title,
+    .repair-modal-overlay, .repair-modal-overlay .repair-modal-card,
+    .loading-8bit > div {
+        animation: none !important;
+        transition: opacity 0.01s !important;
+    }
+}
+
+/* ========================================================================== 任务三：修复 .repair-modal-card 类名定义 原 HTML 使用了 .repair-modal-card 但 CSS 仅有 .repair-modal，补齐定义 ========================================================================== */
+.repair-modal-card {
+    /* 使用 CSS 变量，支持主题切换 */
+    position: relative;
+    background: var(--color-surface-overlay, rgba(30, 30, 35, 0.92));
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 0;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ========================================================================== 任务一：历史详情弹窗三段式布局样式 ========================================================================== */
+/* 历史详情弹窗样式 */
+/* 提高特异性替代 !important，避免级联冲突 */
+div.history-detail-card {
+    max-width: 420px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.history-detail-header {
+    padding: 16px 20px 8px;
+    flex-shrink: 0;
+}
+.history-detail-summary {
+    padding: 8px 20px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+.history-detail-summary .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 4px 0;
+    font-size: 13px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.history-detail-summary .summary-label {
+    color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+}
+.history-detail-summary .summary-value {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1;
+    min-width: 0;
+}
+.history-detail-body {
+    padding: 8px 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+.history-detail-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding-top: 12px;
+}
+
+.history-detail-footer > .liquidGlass-wrapper {
+    flex: 1;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* 历史卡片诊断记录类型徽章 */
+.history-card-type {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-left: 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(96, 165, 250, 0.2);
+    color: var(--color-blue-400);
+}
+
+/* ========================================================================== 任务一：自定义滚动条（替换浏览器默认滚动条） ========================================================================== */
+/* 自定义滚动条（WebKit/Chromium） */
+.custom-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: var(--surface-20);
+    border-radius: 3px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--surface-35);
+}
+.custom-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+}
+/* Firefox 兼容 */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* 全局应用到所有 overflow 容器 */
+.repair-modal-body,
+.probe-results,
+#history-list,
+#page-detect.active,
+#page-latency.active,
+#page-history.active {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.repair-modal-body::-webkit-scrollbar,
+.probe-results::-webkit-scrollbar,
+#history-list::-webkit-scrollbar,
+#page-detect.active::-webkit-scrollbar,
+#page-latency.active::-webkit-scrollbar,
+#page-history.active::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.repair-modal-body::-webkit-scrollbar-track,
+.probe-results::-webkit-scrollbar-track,
+#history-list::-webkit-scrollbar-track,
+#page-detect.active::-webkit-scrollbar-track,
+#page-latency.active::-webkit-scrollbar-track,
+#page-history.active::-webkit-scrollbar-track {
+    background: transparent;
+}
+.repair-modal-body::-webkit-scrollbar-thumb,
+.probe-results::-webkit-scrollbar-thumb,
+#history-list::-webkit-scrollbar-thumb,
+#page-detect.active::-webkit-scrollbar-thumb,
+#page-latency.active::-webkit-scrollbar-thumb,
+#page-history.active::-webkit-scrollbar-thumb {
+    background: var(--surface-20);
+    border-radius: 3px;
+}
+.repair-modal-body::-webkit-scrollbar-thumb:hover,
+.probe-results::-webkit-scrollbar-thumb:hover,
+#history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--surface-35);
+}
+
+/* toast 提示（#15），替代原生 alert，匹配 Liquid Glass 风格，深浅色自适应 */
+#v69-toast-layer {
+    position: fixed;
+    left: 50%;
+    bottom: 90px;
+    transform: translateX(-50%);
+    z-index: var(--z-floating, 500);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    pointer-events: none;
+    max-width: 88%;
+}
+.v69-toast {
+    pointer-events: auto;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-text);
+    background: var(--glass-tint, rgba(255, 255, 255, 0.32));
+    border: 1px solid var(--glass-rim, rgba(255, 255, 255, 0.55));
+    box-shadow: var(--card-shadow, 0 8px 24px rgba(0, 0, 0, 0.18));
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition: opacity 0.26s ease, transform 0.26s ease;
+    word-break: break-word;
+    max-width: 100%;
+}
+.v69-toast.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* 全局焦点可见样式，提高键盘导航可访问性 */
+*:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* ======================================================================== 文字特效合集（移植自 resources/资料/好看的文字效果30.html） ======================================================================== */
+
+/* -- 效果 #04：3D 立体叠加（保留原色，仅取透视+阴影偏移结构） ---- */
+.ef-04 {
+    display: inline-block;
+    text-shadow:
+        1px 1px 0 rgba(0,0,0,.18),
+        2px 2px 0 rgba(0,0,0,.16),
+        3px 3px 0 rgba(0,0,0,.14),
+        4px 4px 0 rgba(0,0,0,.12),
+        5px 5px 0 rgba(0,0,0,.10),
+        6px 6px 0 rgba(0,0,0,.08);
+    transform: perspective(500px) rotateX(5deg);
+    transition: transform .4s, text-shadow .4s;
+}
+.ef-04:hover {
+    transform: perspective(500px) rotateX(0deg) scale(1.05);
+    text-shadow:
+        1px 1px 0 rgba(0,0,0,.22),
+        2px 2px 0 rgba(0,0,0,.20),
+        3px 3px 0 rgba(0,0,0,.18),
+        4px 4px 0 rgba(0,0,0,.16),
+        5px 5px 0 rgba(0,0,0,.14),
+        6px 6px 0 rgba(0,0,0,.12),
+        7px 7px 10px rgba(0,0,0,.15);
+}
+
+/* -- 效果 #09：打字机（保留原色，由 JS 动态触发动画） ---- */
+.ef-09 {
+    display: inline-block;
+    font-family: 'Minecraft AE', 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.4;
+    border-right: 2px solid var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;  /* 初始宽度为0，JS 切换页面时启动动画展开 */
+    max-width: 100%;  /* 限制最大宽度，防止文字过长时超出容器 */
+    vertical-align: bottom;  /* 确保竖线与文字基线对齐 */
+    padding-bottom: 2px;  /* 调整底部间距，使竖线与文字底部对齐 */
+}
+/* 优化打字机展开动画 */
+@keyframes ef09a {
+    from {
+        width: 0;
+        border-color: var(--color-text);
+    }
+    to {
+        width: 100%;
+        border-color: var(--color-text);
+    }
+}
+@keyframes ef09b {
+    50% {
+        border-color: transparent;
+    }
+}
+
+/* -- 效果 #17：光泽扫过（Shimmer） ---- */
+.ef-17 {
+    display: inline-block;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(0,210,255,.7) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: ef17 2.5s ease infinite;
+}
+@keyframes ef17 {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+}
+
+/* -- 效果 #20：脉冲呼吸 ---- */
+.ef-20 {
+    display: inline-block;
+    animation: ef20 2s ease-in-out infinite;
+}
+@keyframes ef20 {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.12); opacity: .7; }
+}
+
+button:focus-visible,
+.liquidGlass-wrapper:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="app.title">我的世界 IPv106 联机工具</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self';">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @font-face {
+            font-family: 'Minecraft AE';
+            src: url('minecraft.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body { font-family: 'Minecraft AE', 'Segoe UI', sans-serif; }
+    </style>
+</head>
+<body>
+    <!-- 语义容器：主容器，使用 role="main" 提高可访问性 -->
+    <!-- SVG 滤镜：macOS Liquid Glass Effect（毛玻璃图标精确版本） -->
+    <svg style="display:none;">
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+            <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence" />
+            <feComponentTransfer in="turbulence" result="mapped">
+                <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
+                <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+                <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+            </feComponentTransfer>
+            <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+            <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100" result="specLight">
+                <fePointLight x="-200" y="-200" z="300" />
+            </feSpecularLighting>
+            <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage" />
+            <feDisplacementMap in="SourceGraphic" in2="softMap" scale="200" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+    </svg>
+    <!-- 壁纸背景层 — 独立层，受 body overflow:hidden 裁剪圆角 -->
+    <div id="bg-wallpaper"></div>
+    <!-- 全屏 RGB 幻彩背景层 — 独立动画，不受 #app 玻璃遮挡 -->
+    <div id="rgb-bg"></div>
+    <div id="particles-background"></div>
+
+    <!-- 改为语义标签 header，提高文档结构可读性 -->
+    <header id="title-bar" data-tauri-drag-region>
+        <span id="title-text" data-i18n="app.title">我的世界 IPv6 联机工具</span>
+        <div id="title-controls">
+            <button class="title-btn liquidGlass-wrapper" id="btn-language" title="Language" data-i18n-aria="aria.language">
+                <div class="liquidGlass-effect"></div>
+                <div class="liquidGlass-tint"></div>
+                <div class="liquidGlass-shine"></div>
+                <span class="liquidGlass-text">EN</span>
+            </button>
+            <button class="title-btn liquidGlass-wrapper" id="btn-theme" title="Theme" data-i18n-aria="aria.theme">
+                <div class="liquidGlass-effect"></div>
+                <div class="liquidGlass-tint"></div>
+                <div class="liquidGlass-shine"></div>
+                <span class="liquidGlass-text">🌙</span>
+            </button>
+            <button class="title-btn liquidGlass-wrapper" id="btn-minimize" data-i18n-aria="aria.minimize" title="最小化">
+                <div class="liquidGlass-effect"></div>
+                <div class="liquidGlass-tint"></div>
+                <div class="liquidGlass-shine"></div>
+                <span class="liquidGlass-text">─</span>
+            </button>
+            <button class="title-btn title-btn-close liquidGlass-wrapper" id="btn-close" data-i18n-aria="aria.close" title="关闭">
+                <div class="liquidGlass-effect"></div>
+                <div class="liquidGlass-tint"></div>
+                <div class="liquidGlass-shine"></div>
+                <span class="liquidGlass-text">✕</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 改为语义标签 main，role=main 提高可访问性 -->
+    <main id="app" role="main">
+        <!-- #app 内部专属 RGB 背景层 — 为内部按钮 effect 层的 backdrop-filter 提供采样内容 -->
+        <div id="app-rgb-bg"></div>
+        <!-- === 页面 0: 主页 === -->
+        <div class="page active" id="page-home">
+            <!-- Hero 区：品牌识别（标题不加框） -->
+            <div class="home-hero-area">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <img src="logo.png" alt="IPv6" loading="lazy">
+                    </div>
+                    <h1 class="main-title ef-04" data-i18n="home.main.title">我的世界 IPv6 联机工具</h1>
+                    <p class="sub-title ef-04" data-i18n="app.subtitle">Minecraft IPv6 Connection Tool v101</p>
+                </div>
+            </div>
+
+            <!-- 主操作卡片：核心 CTA -->
+            <div class="home-action-card glass-card glass-card-hover">
+                <div class="btn-group">
+                    <button class="liquidGlass-wrapper magnet-btn" id="btn-start-detect" data-page="1" data-i18n-aria="aria.start_detect">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text ef-20" data-i18n="home.btn.detect">开始检测</span>
+                    </button>
+                </div>
+                <div class="status-bar" id="home-status" data-i18n="home.status">点击 <span class="em-key">"开始检测"</span> 检查您的 <strong>IPv6</strong> 连接</div>
+            </div>
+
+            <!-- 次要操作卡片：辅助入口 -->
+            <div class="home-link-section">
+                <button class="liquidGlass-wrapper magnet-btn btn-pro-test" id="btn-pro-test" data-i18n-aria="aria.pro_test">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="home.btn.protest">🔗 对测试结果不满意？访问专业测试网站</span>
+                </button>
+            </div>
+
+            <!-- 开发者卡片：底部签名 -->
+            <div class="developer-section">
+                <div id="developer-card" class="developer-card glass-card glass-card-hover">
+                    <div class="developer-avatar">
+                        <img src="avatar.jpg" alt="HIMKUG" loading="lazy">
+                        <div class="avatar-glow"></div>
+                    </div>
+                    <div class="developer-info">
+                        <div class="developer-name" data-i18n="home.developer.name">HIMKUG</div>
+                        <div class="developer-badges">
+                            <span class="developer-badge" data-i18n="home.developer.badge">开发者</span>
+                            <span class="developer-badge badge-bilibili" data-i18n="home.developer.badge.bilibili">B站 UP 主</span>
+                        </div>
+                    </div>
+                    <div class="developer-arrow" data-i18n="home.developer.arrow">主页 →</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === 页面 1: 监测页 === -->
+        <div class="page" id="page-detect">
+            <div class="detect-fixed-layout">
+                <!-- loading 动画在上方，百分比在动画正中间 -->
+                <div class="detect-loading-wrap" id="detect-loading-wrap" style="display:none;">
+                    <div class="loading-8bit">
+                        <div></div><div></div><div></div><div></div>
+                        <div></div><div></div><div></div><div></div>
+                        <div></div><div></div><div></div><div></div>
+                        <div></div><div></div><div></div><div></div>
+                        <span class="detect-loading-percent" id="detect-loading-percent">0%</span>
+                    </div>
+                </div>
+
+                <!-- 状态头部 -->
+                <div class="detect-header">
+                    <h2 class="detect-title" data-i18n="detect.title.detecting">正在检测...</h2>
+                </div>
+
+                <!-- 步骤卡片在下方 -->
+                <div class="steps-glass-box glass-card">
+                    <div class="steps-scroll-container">
+                        <div class="steps-container" id="steps-container">
+                            <div class="step-item" data-step="0">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.0">枚举网卡</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="1">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.1">过滤链路本地地址</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="2">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.2">提取公网 IPv6 地址</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="3">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.3">IPv4 域名连接测试</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="4">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.4">IPv6 域名连接测试</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="5">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.5">双栈域名连接测试</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="6">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.6">双栈域名大数据包传输</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="7">
+                                <div class="step-indicator"><div class="step-dot"></div><div class="step-line"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.7">IPv6 大数据包传输</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                            <div class="step-item" data-step="8">
+                                <div class="step-indicator"><div class="step-dot"></div></div>
+                                <div class="step-content"><div class="step-label" data-i18n="step.8">NAT66 检测</div><div class="step-status" data-i18n="step.waiting">等待中</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detect-status-text" id="detect-status-text" style="display:none;"></div>
+
+                <!-- 检测失败时引导 — 提示用户前往专业测试网站或重新检测 -->
+                <div class="detect-guide-box" id="detect-guide-box" style="display:none;">
+                    <div class="guide-text" data-i18n="detect.guide.text"><span class="em-danger">修复未生效？</span>前往<span class="em-link">专业测试网站</span>深入排查</div>
+                    <div class="guide-buttons">
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-retry-detect" data-i18n-aria="aria.retry_detect">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.retry">🔄 重新检测</span>
+                        </button>
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-visit-pro" data-i18n-aria="aria.visit_pro">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.pro_test">🔗 专业测试网站</span>
+                        </button>
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-watch-tutorial" data-i18n-aria="aria.watch_tutorial">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.tutorial">▶ 观看 B 站视频教程</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 操作区：成功时显示 -->
+                <div class="detect-actions" id="detect-actions" style="display:none;">
+                    <button class="liquidGlass-wrapper liquidGlass-back magnet-btn" id="btn-detect-back" data-i18n-aria="aria.back">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                    </button>
+                    <button class="liquidGlass-wrapper liquidGlass-green magnet-btn" id="btn-detect-continue" data-i18n-aria="aria.continue">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="detect.btn.continue">继续 ▶</span>
+                    </button>
+                </div>
+                <!-- 操作区：失败时显示 -->
+                <div class="detect-fail-actions" id="detect-fail-actions" style="display:none;">
+                    <div class="detect-fail-row">
+                        <button class="liquidGlass-wrapper liquidGlass-back magnet-btn" id="btn-detect-back2" data-i18n-aria="aria.back">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                        </button>
+                        <button class="liquidGlass-wrapper liquidGlass-green magnet-btn" id="btn-detect-continue2" data-i18n-aria="aria.continue_risk">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.continue">继续 ▶</span>
+                        </button>
+                    </div>
+                    <div class="detect-repair-group">
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-detect-quick-repair" data-i18n-aria="aria.quick_repair">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.quick_repair">⚡ 快速修复</span>
+                        </button>
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-detect-deep-repair" data-i18n-aria="aria.deep_repair">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="detect.btn.deep_repair">🔧 深度修复</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === 页面 2: 配置页 === -->
+        <div class="page" id="page-config">
+            <div class="page-header">
+                <button class="liquidGlass-wrapper magnet-btn page-header-back" data-page="0" data-i18n-aria="aria.back_home">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                </button>
+                <h2 class="page-title" data-i18n="config.title">配置连接地址</h2>
+            </div>
+
+            <!-- 配置卡片：核心输入区 -->
+            <div class="config-card glass-card">
+                <div class="config-section">
+                    <div class="config-group">
+                        <label class="config-label"><strong data-i18n="config.label.address">IPv6 地址</strong></label>
+                        <div class="config-address-box" id="config-address-display">检测中...</div>
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label" for="config-port"><strong data-i18n="config.label.port">端口号</strong> <span class="hint" data-i18n="config.port.hint">(1-65535)</span></label>
+                        <input type="text" inputmode="numeric" pattern="\d*" class="config-input" id="config-port" data-i18n-placeholder="config.port.placeholder" placeholder="在此输入端口号" maxlength="5" autocomplete="off">
+                    </div>
+                    <button class="liquidGlass-wrapper magnet-btn" id="btn-generate-addr" data-i18n-aria="aria.generate_addr">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="config.btn.generate">生成连接地址</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 指南卡片：端口获取帮助 -->
+            <div class="port-hint-card glass-card">
+                <div class="port-hint-section">
+                    <div class="port-hint-title" data-i18n="config.hint.title">📖 <strong>如何获取联机端口号？</strong></div>
+                    <div class="port-hint-steps">
+                        <div class="port-hint-step"><span class="step-mark">1</span> <span data-i18n="config.hint.step1">进入单人存档，按 <kbd>ESC</kbd> → 点击<span class="em-key">「对局域网开放」</span></span></div>
+                        <div class="port-hint-step"><span class="step-mark">2</span> <span data-i18n="config.hint.step2">设置游戏模式和作弊选项后，点击<span class="em-key">「启动局域网世界」</span></span></div>
+                        <div class="port-hint-step"><span class="step-mark">3</span> <span data-i18n="config.hint.step3">左下角聊天框会提示：<code>本地游戏已在端口 xxxxx 上开启</code></span></div>
+                        <div class="port-hint-step"><span class="step-mark">4</span> <span data-i18n="config.hint.step4">将 <span class="em-key">xxxxx</span> 填入上方端口号即可</span></div>
+                    </div>
+                    <div class="port-hint-note">
+                        <p data-i18n="config.hint.note19_3"><span class="em-key">1.19.3 及以上版本</span>：可在"对局域网开放"界面手动指定端口，建议填 <span class="em-link">25565</span>。</p>
+                        <p data-i18n="config.hint.note19_3_low"><span class="em-warn">1.19.3 以下版本</span>：端口随机生成（1024–65535），如需固定请安装"自定义局域网联机"Mod。</p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="page-footer-subtitle" data-i18n="config.footer">填入<strong>端口号</strong>以生成<span class="em-link">联机地址</span></p>
+        </div>
+
+        <!-- === 页面 3: 结果页 === -->
+        <div class="page" id="page-result">
+            <div class="page-header">
+                <button class="liquidGlass-wrapper magnet-btn page-header-back" data-page="0" data-i18n-aria="aria.back_home">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                </button>
+                <h2 class="page-title" data-i18n="result.title">连接地址</h2>
+            </div>
+
+            <!-- 结果卡片：核心地址展示 -->
+            <div class="result-card glass-card">
+                <div class="result-section">
+                    <div class="result-address-label"><strong data-i18n="result.label">您的联机地址</strong></div>
+                    <div class="result-address-box" id="result-address-display">::1</div>
+                    <div class="result-actions">
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-copy-result" data-i18n-aria="aria.copy_result">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="result.btn.copy">📋 复制地址</span>
+                        </button>
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-result-latency" data-i18n-aria="aria.diagnose_latency">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="result.btn.latency">🎯 网络性能诊断</span>
+                        </button>
+                    </div>
+                    <p class="result-hint" data-i18n="result.hint">对方在<strong>"直接连接"</strong>中输入此地址即可加入<br><span class="result-hint-accent">💡 测测速，看看和朋友联机有多快</span></p>
+                </div>
+            </div>
+
+            <p class="page-footer-subtitle" data-i18n="result.footer">将此地址分享给<strong>朋友</strong>即可<span class="em-ok">联机</span></p>
+        </div>
+
+        <!-- === 页面 4: 故障页 === -->
+        <div class="page" id="page-fault">
+            <div class="page-header">
+                <button class="liquidGlass-wrapper magnet-btn page-header-back" data-page="0" data-i18n-aria="aria.back_home">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                </button>
+                <h2 class="page-title" data-i18n="fault.title">IPv6 异常处理</h2>
+            </div>
+            <div class="fault-card glass-card">
+                <div class="fault-section">
+                    <div class="btn-group-vertical">
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-quick-repair" data-i18n-aria="aria.quick_repair">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="fault.btn.quick_repair">⚡ 快速修复</span>
+                        </button>
+                        <button class="liquidGlass-wrapper magnet-btn" id="btn-deep-repair" data-i18n-aria="aria.deep_repair">
+                            <div class="liquidGlass-effect"></div>
+                            <div class="liquidGlass-tint"></div>
+                            <div class="liquidGlass-shine"></div>
+                            <span class="btn-glow"></span>
+                            <span class="liquidGlass-text" data-i18n="fault.btn.deep_repair">🔧 深度修复</span>
+                        </button>
+                    </div>
+                    <!-- 修复步骤UI（流式显示当前正在执行哪一步） -->
+                    <div class="repair-steps" id="repair-steps" style="display:none;"></div>
+                    <div class="repair-log-container" id="repair-log-container" style="display:none;">
+                        <h3 class="log-title"><strong data-i18n="fault.log.title">修复日志</strong></h3>
+                        <div class="repair-log" id="repair-log"></div>
+                    </div>
+                    <!-- 修复完成后的验证区 -->
+                    <div class="repair-verify" id="repair-verify" style="display:none;">
+                        <div class="repair-verify-hint" id="repair-verify-hint" data-i18n="fault.verify.hint"><span class="em-ok">修复完成</span></div>
+                        <div class="repair-verify-buttons">
+                            <button class="liquidGlass-wrapper magnet-btn" id="btn-fault-retry" data-i18n-aria="aria.retry_detect">
+                                <div class="liquidGlass-effect"></div>
+                                <div class="liquidGlass-tint"></div>
+                                <div class="liquidGlass-shine"></div>
+                                <span class="btn-glow"></span>
+                                <span class="liquidGlass-text" data-i18n="fault.btn.retry">🔄 重新检测</span>
+                            </button>
+                            <button class="liquidGlass-wrapper magnet-btn" id="btn-fault-pro" data-i18n-aria="aria.visit_pro">
+                                <div class="liquidGlass-effect"></div>
+                                <div class="liquidGlass-tint"></div>
+                                <div class="liquidGlass-shine"></div>
+                                <span class="btn-glow"></span>
+                                <span class="liquidGlass-text" data-i18n="fault.btn.pro_test">🔗 专业测试网站</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="page-footer-subtitle" data-i18n="fault.footer">检测到<span class="em-danger">连接异常</span>，请尝试<strong>修复方案</strong>。修复完成后请<strong>重新检测</strong>以验证是否生效</p>
+        </div>
+
+        <!-- === 页面 5: 延迟检测页 (v6-probe 高精度诊断) === -->
+        <div class="page" id="page-latency">
+            <div class="page-header">
+                <button class="liquidGlass-wrapper magnet-btn page-header-back" data-page="0" data-i18n-aria="aria.back_home">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                </button>
+                <h2 class="page-title ef-09" data-i18n="latency.title">IPv6 网络性能诊断</h2>
+            </div>
+            <div class="latency-card glass-card">
+                <div class="latency-section">
+                    <div class="config-group">
+                        <label class="config-label" for="latency-target"><strong data-i18n="latency.label.target">目标 IPv6 地址 / 域名</strong></label>
+                        <input type="text" class="config-input" id="latency-target" data-i18n-placeholder="latency.target.placeholder" placeholder="请输入对方的 IPv6 地址" maxlength="253" autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="latency-input-hint" id="latency-input-hint" data-i18n="latency.input.hint">⚠ 请先输入<span class="em-key">对方的 IPv6 地址</span>才能开始诊断</div>
+                    <button class="liquidGlass-wrapper magnet-btn" id="btn-start-tracert" data-i18n-aria="aria.diagnose_latency">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="latency.btn.start">开始诊断</span>
+                    </button>
+                    <div class="probe-summary" id="probe-summary" style="display:none;"></div>
+                </div>
+            </div>
+            <!-- 综合评分展示区 -->
+            <div class="probe-score-box" id="probe-score-box" style="display:none;">
+                <div class="probe-score-ring" id="probe-score-ring">
+                    <svg viewBox="0 0 100 100" class="score-svg">
+                        <circle cx="50" cy="50" r="42" class="score-ring-bg"/>
+                        <circle cx="50" cy="50" r="42" class="score-ring-fill" id="score-ring-fill"/>
+                    </svg>
+                    <div class="probe-score-text">
+                        <span class="probe-score-num" id="probe-score-num">--</span>
+                        <span class="probe-score-unit">/100</span>
+                    </div>
+                </div>
+                <div class="probe-score-info">
+                    <div class="probe-score-label" id="probe-score-label">--</div>
+                    <div class="probe-score-meta" id="probe-score-meta"></div>
+                </div>
+            </div>
+            <!-- 垂直卡片容器：每个测量维度一张卡片 -->
+            <div class="probe-results" id="probe-results"></div>
+            <p class="page-footer-subtitle" data-i18n="latency.footer"><strong>v6-probe</strong> 高精度多维度延迟测量</p>
+        </div>
+
+        <!-- === 页面 6: 历史记录页 === -->
+        <div class="page" id="page-history">
+            <div class="page-header">
+                <button class="liquidGlass-wrapper magnet-btn page-header-back" data-page="0" data-i18n-aria="aria.back_home">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                </button>
+                <h2 class="page-title ef-09" data-i18n="history.title">历史检测记录</h2>
+            </div>
+            <div class="history-list-card glass-card">
+                <div class="history-list" id="history-list">
+                    <div class="history-empty" data-i18n="history.empty">暂无历史记录</div>
+                </div>
+                <div class="history-footer" id="history-footer" style="display:none;">
+                    <button class="liquidGlass-wrapper magnet-btn" id="btn-clear-all" data-i18n-aria="aria.clear_all">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="history.btn.clear">清除所有痕迹</span>
+                    </button>
+                </div>
+            </div>
+            <p class="page-footer-subtitle" id="history-data-path" data-i18n="history.data.path">数据存储路径：加载中...</p>
+        </div>
+
+        <!-- === 页面 7: 免责声明页 === -->
+        <div class="page" id="page-disclaimer">
+            <div class="page-header">
+                <button class="liquidGlass-wrapper magnet-btn page-header-back" data-page="0" data-i18n-aria="aria.back_home">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="detect.btn.back">← 返回</span>
+                </button>
+                <h2 class="page-title ef-09" data-i18n="disclaimer.title">免责声明</h2>
+            </div>
+            <div class="disclaimer-card glass-card">
+                <div class="disclaimer-content" id="disclaimer-content">
+                    <h3 data-i18n="disclaimer.h1">一、软件性质</h3>
+                    <p data-i18n="disclaimer.p1">本工具是一款面向 <span class="em-link">《我的世界》（Minecraft）</span> 玩家的 <span class="em-key">IPv6 联机辅助软件</span>，由个人开发者以业余项目形式开发，<span class="em-ok">免费开放使用</span>，无任何广告、内购或变现机制，源代码基于 <strong>Apache 2.0</strong> 协议开源。</p>
+                    <p data-i18n="disclaimer.p2">本工具以 <span class="em-danger">"现状"（AS IS）</span> 提供，开发者不对软件的可用性、稳定性或兼容性作任何明示或暗示的保证。</p>
+
+                    <h3 data-i18n="disclaimer.h2">二、功能与风险</h3>
+                    <p data-i18n="disclaimer.p3">本工具提供以下功能：</p>
+                    <ul>
+                        <li data-i18n="disclaimer.li1"><span class="em-ok">检测类</span>：IPv6 地址枚举、公网可用性测试、NAT66 检测等只读操作；</li>
+                        <li data-i18n="disclaimer.li2"><span class="em-warn">修复类</span>：在用户主动调用下，执行网络栈重置、协议栈修复等系统级写入操作。</li>
+                    </ul>
+                    <p data-i18n="disclaimer.p4">在正常环境下，上述功能可按设计意图正常工作。但在 <span class="em-danger">系统环境异常</span>（如 PATH 被劫持、系统组件损坏、权限配置异常、杀毒软件拦截等）的情况下，修复类操作 <span class="em-danger">可能造成可逆的系统配置变更</span>（如网络配置回滚、需重启计算机等），此类风险由用户自行承担。</p>
+
+                    <h3 data-i18n="disclaimer.h3">三、使用限制</h3>
+                    <p data-i18n="disclaimer.p5">用户承诺 <span class="em-danger">不得</span> 将本工具用于任何违法违规用途，包括但不限于：</p>
+                    <ul>
+                        <li data-i18n="disclaimer.li3">未经授权访问、攻击他人计算机或网络系统；</li>
+                        <li data-i18n="disclaimer.li4">破坏信息系统、窃取数据、传播恶意代码；</li>
+                        <li data-i18n="disclaimer.li5">实施网络诈骗、侵犯公民个人信息等违法犯罪行为。</li>
+                    </ul>
+                    <p data-i18n="disclaimer.p6">如用户违反上述规定，<span class="em-danger">一切后果由用户本人承担</span>，开发者不承担任何责任。</p>
+
+                    <h3 data-i18n="disclaimer.h4">四、责任限制</h3>
+                    <p data-i18n="disclaimer.p7">本工具为 <span class="em-ok">免费、非盈利</span> 的个人项目，开发者仅在存在故意或重大过失时承担法律责任。对于因使用本工具造成的任何直接、间接、偶然或衍生性损害（包括数据丢失、业务中断等），开发者不承担责任。</p>
+                    <p data-i18n="disclaimer.p8"><em>"可逆破坏"</em>指可通过重启计算机、系统还原或重新执行修复操作恢复的损害；不可逆的数据丢失或硬件损坏不在本工具可预见风险范围内。</p>
+
+                    <h3 data-i18n="disclaimer.h5">五、开源协议与 AI 披露</h3>
+                    <p data-i18n="disclaimer.p9">本工具基于 <span class="em-link">Apache License 2.0</span> 开源，完整协议见：<code>https://www.apache.org/licenses/LICENSE-2.0</code>。</p>
+                    <p data-i18n="disclaimer.p10"><span class="em-warn">AI 生成内容披露：</span>本工具部分代码由人工智能辅助生成，已经人工审核，但不对 AI 生成内容的绝对正确性、完整性或安全性作保证。如发现异常，请 <span class="em-danger">立即停止使用</span> 并反馈至开发者。</p>
+                    <p data-i18n="disclaimer.p11"><em>开发者保留对本免责声明的最终解释权与修订权。</em></p>
+                </div>
+            </div>
+            <p class="page-footer-subtitle" data-i18n="disclaimer.footer">请仔细阅读以上条款</p>
+        </div>
+    </main>
+
+    <!-- === 首次启动免责声明弹窗（独立于 #app，避免层叠上下文问题） === -->
+    <div id="page-first-run" role="dialog" aria-modal="true" aria-labelledby="first-run-title">
+        <div class="first-run-modal">
+            <div class="first-run-icon">⚠️</div>
+            <h2 class="first-run-title" id="first-run-title" data-i18n="first.title">欢迎使用 IPv6 联机工具</h2>
+            <p class="first-run-desc" data-i18n="first.desc">在开始使用前，请仔细阅读并同意以下免责声明：</p>
+            <div class="first-run-disclaimer-preview">
+                <p data-i18n="first.preview1"><span class="em-strong">本工具以"现状"（AS IS）免费提供</span>，由个人开发者业余开发，<span class="em-ok">无任何盈利目的</span>。</p>
+                <p data-i18n="first.preview2">本工具包含 IPv6 检测与网络修复功能。在<span class="em-danger">系统环境异常</span>的情况下，修复类操作<span class="em-danger">可能造成可逆的系统配置变更</span>，风险由用户自行承担。</p>
+                <p data-i18n="first.preview3"><em>部分代码由 AI 辅助生成。</em>详情请查看完整免责声明。</p>
+            </div>
+            <div class="first-run-buttons">
+                <button class="liquidGlass-wrapper liquidGlass-red magnet-btn" id="btn-first-disagree" data-i18n-aria="aria.disagree">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="first.disagree">拒绝</span>
+                </button>
+                <button class="liquidGlass-wrapper magnet-btn" id="btn-first-agree" data-i18n-aria="aria.agree">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="first.agree">同意</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === 自定义确认对话框（独立于 #app，避免层叠上下文问题） === -->
+    <div class="confirm-modal-overlay" id="confirm-modal" style="display: none;" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="confirm-modal">
+            <div class="confirm-icon">⚠️</div>
+            <h3 class="confirm-title" id="confirm-title" data-i18n="confirm.title">确认操作</h3>
+            <p class="confirm-message" id="confirm-message" data-i18n="confirm.message">确定要执行此操作吗？</p>
+            <div class="confirm-buttons">
+                <button class="liquidGlass-wrapper magnet-btn" id="confirm-cancel" data-i18n-aria="aria.cancel">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="confirm.cancel">取消</span>
+                </button>
+                <button class="liquidGlass-wrapper magnet-btn" id="confirm-ok" data-i18n-aria="aria.confirm">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="confirm.ok">确认</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === 浮窗按钮：历史记录 / 双机延迟 / 免责声明 === -->
+    <div class="floating-btns" id="floating-btns">
+        <button class="liquidGlass-wrapper floating-btn floating-btn-history magnet-btn" id="btn-open-history" title="查看历史记录" data-i18n-aria="aria.open_history">
+            <div class="liquidGlass-effect"></div>
+            <div class="liquidGlass-tint"></div>
+            <div class="liquidGlass-shine"></div>
+            <span class="btn-glow"></span>
+            <span class="liquidGlass-text" data-i18n="floating.history">📋 历史记录</span>
+        </button>
+        <button class="liquidGlass-wrapper floating-btn floating-btn-latency magnet-btn" id="floating-latency" title="网络性能诊断" data-i18n-aria="aria.diagnose_latency">
+            <div class="liquidGlass-effect"></div>
+            <div class="liquidGlass-tint"></div>
+            <div class="liquidGlass-shine"></div>
+            <span class="btn-glow"></span>
+            <span class="liquidGlass-text" data-i18n="floating.latency">⏱ 网络性能诊断</span>
+        </button>
+        <button class="liquidGlass-wrapper floating-btn floating-btn-disclaimer liquidGlass-red magnet-btn" id="btn-open-disclaimer" title="查看免责声明" data-i18n-aria="aria.open_disclaimer">
+            <div class="liquidGlass-effect"></div>
+            <div class="liquidGlass-tint"></div>
+            <div class="liquidGlass-shine"></div>
+            <span class="btn-glow"></span>
+            <span class="liquidGlass-text" data-i18n="floating.disclaimer">📜 免责声明</span>
+        </button>
+    </div>
+
+    <!-- 修复进度模态弹窗（仿"清除历史记录"对话框样式） -->
+    <div class="repair-modal-overlay" id="repair-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="repair-modal-title">
+        <div class="repair-modal" id="repair-modal">
+            <div class="repair-modal-header">
+                <h2 class="repair-modal-title" id="repair-modal-title" data-i18n="repair.modal.title">快速修复</h2>
+                <p class="repair-modal-subtitle" id="repair-modal-subtitle" data-i18n="repair.modal.subtitle">正在修复网络配置...</p>
+            </div>
+            <div class="repair-modal-body">
+                <!-- 步骤进度列表 -->
+                <div class="repair-modal-steps" id="repair-modal-steps"></div>
+            </div>
+            <div class="repair-modal-footer" id="repair-modal-footer" style="display:none;">
+                <p class="repair-modal-summary" id="repair-modal-summary"></p>
+                <div class="repair-modal-buttons">
+                    <button class="liquidGlass-wrapper liquidGlass-back magnet-btn" id="btn-repair-back" data-i18n-aria="aria.back">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="repair.modal.back">← 返回</span>
+                    </button>
+                    <button class="liquidGlass-wrapper liquidGlass-green magnet-btn" id="btn-repair-retry" data-i18n-aria="aria.retry">
+                        <div class="liquidGlass-effect"></div>
+                        <div class="liquidGlass-tint"></div>
+                        <div class="liquidGlass-shine"></div>
+                        <span class="btn-glow"></span>
+                        <span class="liquidGlass-text" data-i18n="repair.modal.retry">🔄 重试</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史记录详情弹窗 -->
+    <div id="history-detail-overlay" class="repair-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="history-detail-title">
+        <div class="repair-modal-card history-detail-card">
+            <div class="history-detail-header">
+                <h3 id="history-detail-title" data-i18n="history.detail.title">检测详情</h3>
+                <p id="history-detail-subtitle" class="repair-modal-subtitle"></p>
+            </div>
+            <!-- 摘要区（始终可见，不滚动） -->
+            <div id="history-detail-summary" class="history-detail-summary"></div>
+            <!-- 滚动内容区 -->
+            <div class="history-detail-body custom-scroll">
+                <div id="history-detail-steps"></div>
+            </div>
+            <div id="history-detail-footer" class="repair-modal-footer history-detail-footer">
+                <button id="btn-history-detail-delete" class="liquidGlass-wrapper liquidGlass-red magnet-btn" data-i18n-aria="aria.delete_record">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="history.detail.delete">清除记录</span>
+                </button>
+                <button id="btn-history-detail-close" class="liquidGlass-wrapper liquidGlass-green magnet-btn" data-i18n-aria="aria.close_panel">
+                    <div class="liquidGlass-effect"></div>
+                    <div class="liquidGlass-tint"></div>
+                    <div class="liquidGlass-shine"></div>
+                    <span class="btn-glow"></span>
+                    <span class="liquidGlass-text" data-i18n="history.detail.close">关闭页面</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本地化（#13），离线可用，不再依赖 CDN -->
+    <!-- 移除未使用的 anime.min.js（已被 liquid-glass.js 替代） -->
+    <script src="assets/tsparticles.bundle.min.js"></script>
+    <script src="liquid-glass.js"></script>
+    <script src="fx-particles.js"></script>
+    <script src="clipboard.js"></script>
+    <!-- 调试日志显示区域 -->
+    <div id="debug-log-container" style="position: fixed; top: 10px; right: 10px; width: 400px; max-height: 600px; background: var(--color-debug-bg); color: var(--color-debug-fg); font-family: Consolas, monospace; font-size: 11px; padding: 10px; border-radius: 8px; z-index: 9999; overflow-y: auto; border: 1px solid var(--color-debug-fg); display: none;">
+        <div style="margin-bottom: 8px; border-bottom: 1px solid var(--color-debug-fg); padding-bottom: 5px;">
+            <strong>调试日志 (V97_debug)</strong>
+            <button onclick="document.getElementById('debug-log-container').style.display='none'" style="float: right; background: var(--color-debug-fg); color: var(--color-debug-btn-fg); border: none; padding: 2px 8px; cursor: pointer;" data-i18n-aria="aria.close_panel">关闭</button>
+        </div>
+        <div id="debug-log-content" style="white-space: pre-wrap; word-break: break-all;"></div>
+    </div>
+
+    <!-- 打开调试日志按钮 -->
+    <button id="btn-toggle-debug" onclick="toggleDebugLog()" style="position: fixed; bottom: 10px; right: 10px; background: var(--color-debug-bg); color: var(--color-debug-fg); border: 1px solid var(--color-debug-fg); padding: 10px 15px; cursor: pointer; z-index: 9999; font-family: Consolas, monospace;" data-i18n-aria="aria.debug_toggle">🔧 调试日志</button>
+
+    <script src="app-i18n.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

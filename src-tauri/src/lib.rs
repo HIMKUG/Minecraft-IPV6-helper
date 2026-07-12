@@ -599,7 +599,7 @@ async fn detect_ipv6() -> DetectionResult {
 
         match result {
             Ok(res) => {
-                let time = res.split(' ').last().unwrap_or("");
+                let time = res.split(' ').last().unwrap_or("").trim_end_matches(')');
                 steps.push(DetectionStep {
                     index,
                     status: "success".into(),
@@ -2386,7 +2386,8 @@ fn delete_record(index: usize) -> Result<AppConfig, String> {
         debug_log!("[V65] delete_record: removed id={} ts={}", removed.id, removed.timestamp);
         save_history(&records)?;
     } else {
-        debug_log!("[V65] delete_record: index out of range");
+        /* V115: 索引越界时返回错误而非静默忽略，让前端知道删除未生效 */
+        return Err(format!("索引 {} 超出范围（共 {} 条记录）", index, records.len()));
     }
     let loaded = load_history();
     debug_log!("[V65] delete_record: after save, loaded {} records", loaded.len());

@@ -36,7 +36,7 @@
     const active = [];
 
     function acquire() {
-        for (var i = 0; i < pool.length; i++) {
+        for (let i = 0; i < pool.length; i++) {
             if (!pool[i].active) return pool[i];
         }
         const p = createParticle();
@@ -44,13 +44,13 @@
         return p;
     }
 
-    const canvas = null;
-    const ctx = null;
-    const rafId = null;
-    const lastTime = 0;
-    const dpr = 1;
-    const w = 0, h = 0;
-    const globalHue = 0;
+    let canvas = null;
+    let ctx = null;
+    let rafId = null;
+    let lastTime = 0;
+    let dpr = 1;
+    let w = 0, h = 0;
+    let globalHue = 0;
 
     /* === 预渲染 Sprite 缓存 ===
        5种色调 × 4种size = 20张缓存位图
@@ -76,8 +76,8 @@
     }
 
     function initSprites() {
-        for (var hi = 0; hi < SPRITE_HUES.length; hi++) {
-            for (var si = 0; si < SPRITE_SIZES.length; si++) {
+        for (let hi = 0; hi < SPRITE_HUES.length; hi++) {
+            for (let si = 0; si < SPRITE_SIZES.length; si++) {
                 const h = SPRITE_HUES[hi];
                 let s = SPRITE_SIZES[si];
                 spriteCache[h + '_' + s] = buildSprite(h, s);
@@ -87,16 +87,16 @@
 
     function nearestSprite(hue, size) {
         /* 找最近 hue */
-        const nh = SPRITE_HUES[0];
-        const minDiff = 999;
-        for (var i = 0; i < SPRITE_HUES.length; i++) {
+        let nh = SPRITE_HUES[0];
+        let minDiff = 999;
+        for (let i = 0; i < SPRITE_HUES.length; i++) {
             let d = Math.abs(SPRITE_HUES[i] - hue);
             if (d < minDiff) { minDiff = d; nh = SPRITE_HUES[i]; }
         }
         /* 找最近 size */
-        const ns = SPRITE_SIZES[0];
+        let ns = SPRITE_SIZES[0];
         minDiff = 999;
-        for (var j = 0; j < SPRITE_SIZES.length; j++) {
+        for (let j = 0; j < SPRITE_SIZES.length; j++) {
             const d2 = Math.abs(SPRITE_SIZES[j] - size);
             if (d2 < minDiff) { minDiff = d2; ns = SPRITE_SIZES[j]; }
         }
@@ -127,7 +127,7 @@
             globalHue = (globalHue + 47) % 360;
         }
 
-        for (var i = 0; i < count; i++) {
+        for (let i = 0; i < count; i++) {
             const p = acquire();
             const angle = Math.random() * Math.PI * 2;
             const speed = 1.4 + Math.random() * 2.6;
@@ -160,7 +160,7 @@
         ctx.clearRect(0, 0, w, h);
         ctx.globalCompositeOperation = 'lighter';
 
-        const i = active.length;
+        let i = active.length;
         while (i--) {
             const p = active[i];
             if (!p.active) { active.splice(i, 1); continue; }
@@ -180,7 +180,7 @@
             }
 
             const progress = 1 - (p.life / p.maxLife);
-            const alpha = (1 - progress);
+            let alpha = (1 - progress);
             alpha = alpha * alpha;
             alpha *= p.opacityScale;
             const size = p.size * (1 - progress * 0.4);

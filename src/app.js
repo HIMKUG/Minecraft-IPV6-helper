@@ -250,6 +250,12 @@ function triggerTypewriterOnTarget(page) {
 function runPageSwitchSideEffects(targetPage) {
     if (targetPage === 2) {
         try { updateGenerateButtonState(); } catch (e) { console.warn('[app]', e); }
+        /* V113: 进入配置页时同步IPv6地址显示 */
+        var addrDisplay = document.getElementById('config-address-display');
+        if (addrDisplay && window.__APP__.detectedAddresses && window.__APP__.detectedAddresses.length > 0) {
+            var addr = window.__APP__.detectedAddresses[0];
+            addrDisplay.textContent = addr.address + (addr.is_temporary ? t('addr.temp') : '');
+        }
     }
 
     /* 进入检测页时重置操作按钮 */
@@ -271,6 +277,16 @@ function runPageSwitchSideEffects(targetPage) {
     /* 进入网络性能诊断页（页面5）时强制重置 UI，确保首次进入只显示应显示的元素 */
     if (targetPage === 5) {
         resetLatencyPageUI();
+    }
+
+    /* V113: 进入异常处理页（页面4）时强制隐藏仅修复后显示的元素 */
+    if (targetPage === 4) {
+        var repairSteps = document.getElementById('repair-steps');
+        var repairLog = document.getElementById('repair-log-container');
+        var repairVerify = document.getElementById('repair-verify');
+        if (repairSteps) repairSteps.style.display = 'none';
+        if (repairLog) repairLog.style.display = 'none';
+        if (repairVerify) repairVerify.style.display = 'none';
     }
 
     let newTheme = 'green';
@@ -328,7 +344,7 @@ function initParticles() {
     window.tsParticles.load('particles-background', {
         fpsLimit: 60,
         particles: {
-            number: { value: 64, density: { enable: true, area: 800 } },
+            number: { value: 32, density: { enable: true, area: 800 } },
             color: { value: 'hsl(90, 70%, 60%)', animation: { h: { from: 90, to: 140, enable: true, speed: 20, sync: false } } },
             shape: { type: 'circle' },
             opacity: { value: 0.15, random: true, anim: { enable: true, speed: 1, opacity_min: 0.05, sync: false } },
@@ -402,6 +418,8 @@ function burstParticles(x, y) {
 
 function updateStep(index, status, message) {
     const items = document.querySelectorAll('.step-item');
+    /* V113: NAT66(index 10)映射到步骤8显示（备用测试已从源头过滤） */
+    if (index === 10) index = 8;
     const item = items[index];
     if (!item) return;
     item.className = 'step-item';
@@ -527,16 +545,42 @@ async function startDetection() {
 
         addMessage(t('init.enumerating'));
 
+        /* V115: 提前声明 intraStepTimer 和 stopIntraStepProgress，让 finally 块可以访问 */
+        var intraStepTimer = null;
+        function stopIntraStepProgress() {
+            if (intraStepTimer) {
+                clearInterval(intraStepTimer);
+                intraStepTimer = null;
+            }
+        }
+        let lastPercentTime = 0;
+
         const result = await safeInvoke('detect_ipv6');
+
+        /* V113: 彻底移除备用测试步骤(index 8,9)，覆盖result.success */
+        try {
+            if (result && result.steps) {
+                /* 过滤掉备用测试步骤 */
+                result.steps = result.steps.filter(function(s) { return s && s.index !== 8 && s.index !== 9; });
+                /* 检查是否有任何剩余步骤状态为 fail */
+                var hasFail = false;
+                for (var fi = 0; fi < result.steps.length; fi++) {
+                    var s = result.steps[fi];
+                    if (s && s.status === 'fail') { hasFail = true; break; }
+                }
+                if (!hasFail) {
+                    result.success = true;
+                    result.error = '';
+                }
+            }
+        } catch (e) { console.warn('[V113] success override error:', e); }
+        /* V115: 移除无条件成功覆盖。过滤后无fail步骤才置success=true */
 
         await saveCurrentRecordToHistory(result);
         
         const totalSteps = result.steps.length || 9;
         const processedIndices = {};
         let lastIndex = -1;
-        /* 平滑百分比：每步内从"当前%"连续推进到"下一步%"， 而不是离散跳变。让用户看到百分比在动，即使没到下一项 */
-        let lastPercentTime = 0;
-        let intraStepTimer = null;
 
         function startIntraStepProgress() {
             /* 在每一步内 80ms 间隔推进到 90% of 区间，提供"持续在跑"的视觉 */
@@ -569,12 +613,6 @@ async function startDetection() {
                 }
             }, INTRA_STEP_INTERVAL);
         }
-        function stopIntraStepProgress() {
-            if (intraStepTimer) {
-                clearInterval(intraStepTimer);
-                intraStepTimer = null;
-            }
-        }
 
         for (let i = 0; i < result.steps.length; i++) {
             const step = result.steps[i];
@@ -606,7 +644,7 @@ async function startDetection() {
         if (loadingWrap) loadingWrap.style.display = 'none';
         const detectTitle = document.querySelector('.detect-title');
         /* 检测成功时在标题后括号标注 IPv4/IPv6 访问优先级 */
-        const titleHTML = t('detect.status.done');
+        var titleHTML = t('detect.status.done');
         if (result.success && result.ip_priority) {
             const priorityColor = result.ip_priority.includes('IPv6') ? 'var(--color-green-600)' : 'var(--color-red-600)';
             titleHTML += '<br><span style="font-size: 0.85em; color: ' + priorityColor + '; font-weight: 700;">(' + escapeHtml(result.ip_priority) + ')</span>';
@@ -672,9 +710,10 @@ async function startDetection() {
         window.__APP__.detectedAddresses = [];
         addMessage(t('init.detect_error') + errMsg);
         /* catch 块意味着 detect_ipv6 整体失败（异常抛出）， 此时是全部步骤都失败，状态文字应改为"全部失败"而非"部分不成功"， 避免给用户错误的心理预期（部分失败仍可能能联机，全部失败则基本不能）。 但按钮仍走 fail-actions（修复+返回），保持 UI 一致。 */
-        for (let i = 0; i < 9; i++) {
-            const stepItems = document.querySelectorAll('.step-item');
-            const stepItem = stepItems[i];
+        /* V115: 遍历实际 DOM 中的步骤项，硬编码 9 已失效（备用步骤被过滤） */
+        var allStepItems = document.querySelectorAll('.step-item');
+        for (var i = 0; i < allStepItems.length; i++) {
+            const stepItem = allStepItems[i];
             /* 不覆盖已完成或警告的步骤 */
             if (stepItem && !stepItem.classList.contains('done') && !stepItem.classList.contains('warn')) {
                 updateStep(i, 'fail', t('init.step_failed'));
@@ -698,6 +737,7 @@ async function startDetection() {
             guideBox.style.display = shouldShowProTestGuide() ? 'block' : 'none';
         }
     } finally {
+        stopIntraStepProgress();
         try { window.__APP__.isDetecting = false; } catch (e) { console.warn('[app]', e); }
     }
 }
@@ -770,7 +810,7 @@ async function generateAddress() {
         try {
             const formatted = await safeInvoke('format_ipv6_address', { addr: addr, port: port });
             const displayEl = document.getElementById('result-address-display');
-            if (displayEl) displayEl.textContent = formatted;
+            if (displayEl) displayEl.textContent = (formatted && formatted !== 'null' && formatted !== 'undefined') ? formatted : '[' + addr + ']:' + port;
             switchPage(3);
         } catch (err) {
             const formatted = '[' + addr + ']:' + port;
@@ -1034,6 +1074,7 @@ async function startTracert() {
 
         if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
         if (textNode) textNode.textContent = t('latency.diagnosing');
+        if (btn) btn.dataset.i18n = 'latency.diagnosing';  /* V113: 切换data-i18n键，使语言切换时正确显示"诊断中"而非"开始诊断" */
         if (summaryEl) summaryEl.style.display = 'none';
         if (scoreBox) scoreBox.style.display = 'none';
         if (resultsEl) resultsEl.innerHTML = '';
@@ -1144,6 +1185,7 @@ async function startTracert() {
     } finally {
         if (btn) { btn.disabled = !(targetInput && targetInput.value.trim()); btn.style.opacity = ''; btn.style.pointerEvents = ''; }
         if (textNode) textNode.textContent = origText;
+        if (btn) btn.dataset.i18n = targetInput && targetInput.value.trim() ? 'latency.btn.start' : 'latency.btn.hint_empty';  /* V113: 恢复data-i18n键 */
         window.__APP__.isTracertRunning = false;
     }
 }
@@ -1159,9 +1201,13 @@ function renderProbeCard(title, subtitle, metric) {
     if (!metric || metric.min == null || metric.max == null) {
         return '<div class="probe-card-empty">' + t('probe.empty') + '</div>';
     }
+    /* V115: 防御 null/NaN 字段，避免 null 隐式转为 0 导致误分类为 good */
+    var mean = (metric.mean != null) ? Number(metric.mean) : 0;
+    var lossRate = (metric.loss_rate != null) ? Number(metric.loss_rate) : 0;
+    var jitter = (metric.jitter != null) ? Number(metric.jitter) : 0;
     let quality = 'good';
-    if (metric.mean > 200 || metric.loss_rate > 20) quality = 'bad';
-    else if (metric.mean > 100 || metric.loss_rate > 5 || metric.jitter > 30) quality = 'warn';
+    if (mean > 200 || lossRate > 20) quality = 'bad';
+    else if (mean > 100 || lossRate > 5 || jitter > 30) quality = 'warn';
 
     return '' +
     '<div class="probe-card glass-card probe-' + quality + '">' +
@@ -1366,11 +1412,11 @@ function rebindPageButtons(pageIndex) {
     switch(pageIndex) {
         case 1: /* 检测页 */
             bindBtn('btn-detect-continue', function() { switchPage(2); });
-            bindBtn('btn-detect-continue2', function() { switchPage(4); });
+            bindBtn('btn-detect-continue2', function() { switchPage(2); });  /* V113: 无视风险→配置端口号页(page2) */
             bindBtn('btn-detect-back', function() { switchPage(0); });
             bindBtn('btn-detect-back2', function() { switchPage(0); });
-            bindBtn('btn-detect-quick-repair', runQuickRepair);
-            bindBtn('btn-detect-deep-repair', runDeepRepair);
+            bindBtn('btn-detect-quick-repair', function() { switchPage(4); });  /* V113: 快速修复→跳转到修复页(page4) */
+            bindBtn('btn-detect-deep-repair', function() { switchPage(4); });  /* V113: 深度修复→跳转到修复页(page4) */
             break;
 
         case 2: /* 生成地址页 */
@@ -1380,7 +1426,7 @@ function rebindPageButtons(pageIndex) {
         case 3: /* 故障页 */
             bindBtn('btn-fault-retry', function() { startDetection(); });
             bindBtn('btn-fault-pro', function() {
-                const url = 'https://17nas.com/ipv6-test.php';
+                let url = 'https://17nas.com/ipv6-test.php';
                 if (currentLanguage === 'en') url += '?lang=en-US';
                 safeInvoke('open_url', { url: url })
                     .catch(function() {
@@ -1399,8 +1445,43 @@ function rebindPageButtons(pageIndex) {
     }
 }
 
+/* V113: 根据按钮语义分配颜色 — 红色=危险/删除, 琥珀色=警告/修复, 绿色=确认/正向, 蓝色=信息/诊断 */
+function assignButtonColors() {
+    var colorMap = {
+        /* 红色：破坏性操作 */
+        'btn-detect-deep-repair': 'liquidGlass-red',
+        'btn-deep-repair': 'liquidGlass-red',
+        'btn-clear-all': 'liquidGlass-red',
+        'btn-history-detail-delete': 'liquidGlass-red',
+        /* 琥珀色：警告/修复 */
+        'btn-detect-quick-repair': 'liquidGlass-amber',
+        'btn-quick-repair': 'liquidGlass-amber',
+        /* 绿色：正向/确认操作（这些按钮本身已有绿色变体，不加重复类） */
+        /* 蓝色：信息/诊断/外链 */
+        'btn-open-history': 'liquidGlass-blue',
+        'floating-latency': 'liquidGlass-blue',
+        'btn-result-latency': 'liquidGlass-blue',
+        'btn-open-disclaimer': 'liquidGlass-blue',
+        'btn-pro-test': 'liquidGlass-blue',
+        'btn-visit-pro': 'liquidGlass-blue',
+        'btn-watch-tutorial': 'liquidGlass-blue',
+        'btn-fault-pro': 'liquidGlass-blue'
+    };
+    for (var id in colorMap) {
+        if (colorMap.hasOwnProperty(id)) {
+            var btn = document.getElementById(id);
+            if (btn) {
+                btn.classList.add(colorMap[id]);
+            }
+        }
+    }
+}
+
 /* 绑定主页按钮 */
 function bindHomeButtons() {
+    /* V113: 根据按钮语义分配颜色 */
+    assignButtonColors();
+    
     bindBtn('btn-start-detect', startDetection);
     bindBtn('btn-generate-addr', generateAddress);
 
@@ -1441,17 +1522,17 @@ function bindHomeButtons() {
     const latencyTarget = document.getElementById('latency-target');
     if (latencyTarget && !latencyTarget.dataset.bound) {
         latencyTarget.dataset.bound = '1';
-        latencyTarget.addEventListener('input', function() {
-            const btn = document.getElementById('btn-start-tracert');
-            const hint = document.getElementById('latency-input-hint');
-            const hasValue = this.value.trim().length > 0;
-            if (btn) {
-                /* 按钮始终可用，空地址时显示提示文字 */
-                const textNode = btn.querySelector('.liquidGlass-text');
-                if (textNode) {
-                    textNode.textContent = hasValue ? t('latency.btn.start') : t('latency.btn.hint_empty');
-                }
-            }
+latencyTarget.addEventListener('input', function() {
+	            const btn = document.getElementById('btn-start-tracert');
+	            const hint = document.getElementById('latency-input-hint');
+	            const hasValue = this.value.trim().length > 0;
+	            if (btn) {
+	                btn.disabled = !hasValue;  /* V113: 有输入时启用按钮 */
+	                const textNode = btn.querySelector('.liquidGlass-text');
+	                if (textNode) {
+	                    textNode.textContent = hasValue ? t('latency.btn.start') : t('latency.btn.hint_empty');
+	                }
+	            }
             if (hint) {
                 if (hasValue) hint.classList.add('hidden');
                 else hint.classList.remove('hidden');
@@ -1473,7 +1554,7 @@ function bindHomeButtons() {
 
     /* 专业测试网站入口 */
     bindBtn('btn-pro-test', function() {
-        const url = 'https://17nas.com/ipv6-test.php';
+        let url = 'https://17nas.com/ipv6-test.php';
         if (currentLanguage === 'en') url += '?lang=en-US';
         safeInvoke('open_url', { url: url })
             .catch(function() {
@@ -1506,11 +1587,11 @@ function bindHomeButtons() {
 
     /* 检测页操作按钮 */
     bindBtn('btn-detect-continue', function() { switchPage(2); });
-    bindBtn('btn-detect-continue2', function() { switchPage(4); });
+    bindBtn('btn-detect-continue2', function() { switchPage(2); });  /* V113: 无视风险→配置端口号页 */
     bindBtn('btn-detect-back', function() { switchPage(0); });
     bindBtn('btn-detect-back2', function() { switchPage(0); });
-    bindBtn('btn-detect-quick-repair', runQuickRepair);
-    bindBtn('btn-detect-deep-repair', runDeepRepair);
+    bindBtn('btn-detect-quick-repair', function() { switchPage(4); });  /* V113: 快速修复→跳转到修复页 */
+    bindBtn('btn-detect-deep-repair', function() { switchPage(4); });  /* V113: 深度修复→跳转到修复页 */
 
     /* 修复完成后 - 重新检测按钮 */
     bindBtn('btn-retry-detect', function() {
@@ -1542,7 +1623,7 @@ function bindHomeButtons() {
 
     /* 故障页内"访问专业测试网站"按钮 */
     bindBtn('btn-fault-pro', function() {
-        const url = 'https://17nas.com/ipv6-test.php';
+        let url = 'https://17nas.com/ipv6-test.php';
         if (currentLanguage === 'en') url += '?lang=en-US';
         safeInvoke('open_url', { url: url })
             .catch(function() {
@@ -1640,6 +1721,9 @@ function bindDisclaimerClicks() {
 
 /* 绑定全局键盘快捷键 */
 function bindGlobalKeyboardShortcuts() {
+    /* V115: 防止重复绑定导致按键事件触发两次 */
+    if (window.__APP__._keydownBound) return;
+    window.__APP__._keydownBound = true;
     document.addEventListener('keydown', function(e) {
         /* 如果正在输入文本（input/textarea），ESC 仍可关闭弹窗 */
         const isInputFocused = document.activeElement &&
@@ -1717,6 +1801,20 @@ function init() {
         initI18nAndTheme();   /* 恢复语言/主题偏好并应用翻译（增量功能） */
         initParticles();
         magnetEffect();
+
+        /* 【V112 Bug 修复】WebView2 首次渲染 bug：
+           .liquidGlass-effect 同时使用 backdrop-filter + filter:url(#glass-distortion) 时，
+           合成层的 hit-testing 在首次渲染时不正确（pointer-events: none 被忽略）。
+           对每个 .liquidGlass-effect 做一次 display none→block 强制重建合成层。
+           这就是为什么切换页面后再返回就正常的原因（switchPage 触发了完整 reflow）。 */
+        var effects = document.querySelectorAll('.liquidGlass-effect');
+        for (var ei = 0; ei < effects.length; ei++) {
+            var eff = effects[ei];
+            eff.style.display = 'none';
+            void eff.offsetHeight;
+            eff.style.display = '';
+        }
+
         initTitleBar();
         debugLog('[init] initTitleBar done', 'INFO');
 
@@ -1777,6 +1875,45 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+/* V113: 将后端返回的中文文本映射为英文（仅英文模式下生效） */
+function translateBackendText(text) {
+    if (!text || currentLanguage !== 'en') return text;
+    var result = String(text);
+    /* 评分标签映射 */
+    var labelMap = {
+        '优秀': 'Excellent',
+        '良好': 'Fair',
+        '一般': 'Average',
+        '较差': 'Poor',
+        '很差': 'Very Poor'
+    };
+    for (var cn in labelMap) {
+        if (labelMap.hasOwnProperty(cn)) {
+            /* 只替换完整的中文标签词（前后非中文或边界），避免部分匹配 */
+            result = result.split(cn).join(labelMap[cn]);
+        }
+    }
+    /* 摘要开头 "评分 X/100" 映射 */
+    result = result.replace(/^评分/, 'Score');
+    /* "诊断完成" 映射 */
+    result = result.replace(/诊断完成/g, 'Diagnosis complete');
+    result = result.replace(/诊断失败/g, 'Diagnosis failed');
+    result = result.replace(/诊断中/g, 'Diagnosing');
+    /* 常用检测步骤状态映射 */
+    result = result.replace(/检测通过/g, 'passed');
+    result = result.replace(/检测失败/g, 'failed');
+    result = result.replace(/超时/g, 'timeout');
+    result = result.replace(/检测中/g, 'testing');
+    result = result.replace(/通过/g, 'passed');
+    result = result.replace(/失败/g, 'failed');
+    result = result.replace(/延迟/g, 'latency');
+    result = result.replace(/连接测试/g, 'connectivity test');
+    result = result.replace(/域名/g, 'domain');
+    result = result.replace(/主要/g, 'Primary');
+    result = result.replace(/备用/g, 'Backup');
+    return result;
+}
+
 function renderHistory() {
     const list = document.getElementById('history-list');
     if (!list) return;
@@ -1817,7 +1954,7 @@ function renderHistory() {
                         '<span class="history-card-status ' + statusClass + '">' + statusText + typeBadge + '</span>' +
                     '</div>' +
                     '<div class="history-card-address">' + escapeHtml(r.ipv6_address || t('summary.no_address')) + '</div>' +
-                    '<div class="history-card-summary">' + escapeHtml(r.summary || '') + '</div>' +
+                    '<div class="history-card-summary">' + escapeHtml(translateBackendText(r.summary || '')) + '</div>' +
                 '</div>';
     }
     list.innerHTML = html;
@@ -1869,7 +2006,7 @@ function openHistoryDetail(record, index) {
             else if (pr.score < 90) scoreColor = 'var(--color-blue-500)';
             summaryHtml += '<div class=\"summary-row\">' +
                 '<span class=\"summary-label\">' + t('summary.score') + '</span>' +
-                '<span class=\"summary-value\" style=\"color:' + scoreColor + ';\">' + pr.score + '/100 (' + escapeHtml(pr.score_label || '--') + ')</span>' +
+                '<span class=\"summary-value\" style=\"color:' + scoreColor + ';\">' + pr.score + '/100 (' + escapeHtml(translateBackendText(pr.score_label || '--')) + ')</span>' +
                 '</div>';
             /* Average latency and packet loss */
             if (pr.icmp_rtt && pr.icmp_rtt.samples > 0) {
@@ -1931,7 +2068,7 @@ function openHistoryDetail(record, index) {
             if (record.summary) {
                 summaryHtml += '<div class="summary-row" style="flex-direction:column;align-items:flex-start;">' +
                     '<span class="summary-label">' + t('summary.summary') + '</span>' +
-                    '<span class="summary-value" style="margin-top:4px;font-size:12px;line-height:1.5;">' + escapeHtml(record.summary) + '</span>' +
+                    '<span class="summary-value" style="margin-top:4px;font-size:12px;line-height:1.5;">' + escapeHtml(translateBackendText(record.summary)) + '</span>' +
                     '</div>';
             }
         }
@@ -1977,7 +2114,7 @@ function openHistoryDetail(record, index) {
                     if (step.latency) metaParts.push('<span class="step-latency">' + escapeHtml(step.latency) + '</span>');
                     el.innerHTML = '<div class="step-icon">' + icon + '</div>' +
                         '<div class="step-content">' +
-                        '<div class="step-msg">' + escapeHtml(step.message || '') + '</div>' +
+                        '<div class="step-msg">' + escapeHtml(translateBackendText(step.message || '')) + '</div>' +
                         (metaParts.length ? '<div class="step-meta">' + metaParts.join(' · ') + '</div>' : '') +
                         '</div>';
                     stepsEl.appendChild(el);
@@ -2050,7 +2187,8 @@ async function loadAppConfig() {
     } catch (e) {
         console.error('加载配置失败:', e);
         const prevAccepted = window.__APP__.appConfig.first_run_accepted;
-        window.__APP__.appConfig = { first_run_accepted: prevAccepted, records: [] };
+        /* V115: 保留已有的历史记录，避免因配置加载失败而清空 */
+        window.__APP__.appConfig = { first_run_accepted: prevAccepted, records: window.__APP__.appConfig.records || [] };
     }
 }
 
@@ -2183,10 +2321,12 @@ async function cleanCacheDir() {
     try {
         const result = await safeInvoke('clean_cache_dir');
         let msg;
-        if (result.kept && result.kept.length > 0) {
+        if (result && typeof result === 'object' && result.kept && result.kept.length > 0) {
             msg = t('cache.clean.success_partial', { count: result.cleaned ? result.cleaned.length : 0, kept: result.kept.length });
-        } else {
+        } else if (result && typeof result === 'object') {
             msg = t('cache.clean.success', { count: result.cleaned ? result.cleaned.length : 0 });
+        } else {
+            msg = t('cache.clean.failed') + '（后端返回异常）';
         }
         showSimpleMessage(msg);
     } catch (e) {
@@ -2234,6 +2374,10 @@ function showDisclaimerPage() {
 function showFirstRunModal() {
     window.__APP__.appConfig = window.__APP__.appConfig || { first_run_accepted: false, records: [] };
     if (window.__APP__.appConfig.first_run_accepted) {
+        /* 【V111 Bug 修复】在显示主页前先绑定按钮，避免初次加载时按钮无响应 */
+        bindHomeButtons();
+        magnetEffect();
+
         const homePage = document.getElementById('page-home');
         if (homePage) {
             homePage.style.display = 'flex';
@@ -2248,8 +2392,8 @@ function showFirstRunModal() {
             firstPage.style.display = 'flex';
             firstPage.classList.add('active');
         }
-        const floatingBtns2 = document.getElementById('floating-btns');
-        if (floatingBtns2) floatingBtns2.style.display = 'none';
+        const floatingBtns = document.getElementById('floating-btns');
+        if (floatingBtns) floatingBtns.style.display = 'none';
     }
 }
 

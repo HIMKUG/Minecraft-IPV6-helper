@@ -11,7 +11,7 @@
     const CFG = {
         BURST_COUNT_CLICK: 32,
         BURST_COUNT_BUTTON: 60,
-        AMBIENT_POOL_SIZE: 250,
+        AMBIENT_POOL_SIZE: 120,
         AMBIENT_SPAWN_INTERVAL: 60,
         AMBIENT_LIFE: 6500,
         AMBIENT_SPEED: 0.5
@@ -37,7 +37,7 @@
     const ambientActive = [];
 
     function acquireAmbient() {
-        for (var i = 0; i < ambientPool.length; i++) {
+        for (let i = 0; i < ambientPool.length; i++) {
             if (!ambientPool[i].active) return ambientPool[i];
         }
         const p = createParticle();
@@ -46,7 +46,7 @@
     }
 
     function initAmbientPool() {
-        for (var i = 0; i < CFG.AMBIENT_POOL_SIZE; i++) ambientPool.push(createParticle());
+        for (let i = 0; i < CFG.AMBIENT_POOL_SIZE; i++) ambientPool.push(createParticle());
     }
 
     /* === 主 Canvas（仅绘制 ambient） === */
@@ -133,8 +133,8 @@
     }
 
     function initAmbientSprites() {
-        for (var hi = 0; hi < AMBIENT_HUES.length; hi++) {
-            for (var si = 0; si < AMBIENT_SIZES.length; si++) {
+        for (let hi = 0; hi < AMBIENT_HUES.length; hi++) {
+            for (let si = 0; si < AMBIENT_SIZES.length; si++) {
                 ambientSpriteCache[AMBIENT_HUES[hi] + '_' + AMBIENT_SIZES[si]] =
                     buildAmbientSprite(AMBIENT_HUES[hi], AMBIENT_SIZES[si]);
             }
@@ -142,15 +142,15 @@
     }
 
     function nearestAmbientSprite(hue, size) {
-        const nh = AMBIENT_HUES[0];
-        const minDiff = 999;
-        for (var i = 0; i < AMBIENT_HUES.length; i++) {
+        let nh = AMBIENT_HUES[0];
+        let minDiff = 999;
+        for (let i = 0; i < AMBIENT_HUES.length; i++) {
             let d = Math.abs(AMBIENT_HUES[i] - hue);
             if (d < minDiff) { minDiff = d; nh = AMBIENT_HUES[i]; }
         }
-        const ns = AMBIENT_SIZES[0];
+        let ns = AMBIENT_SIZES[0];
         minDiff = 999;
-        for (var j = 0; j < AMBIENT_SIZES.length; j++) {
+        for (let j = 0; j < AMBIENT_SIZES.length; j++) {
             const d2 = Math.abs(AMBIENT_SIZES[j] - size);
             if (d2 < minDiff) { minDiff = d2; ns = AMBIENT_SIZES[j]; }
         }
@@ -227,7 +227,7 @@
         ctx.clearRect(0, 0, w, h);
         ctx.globalCompositeOperation = 'lighter';
 
-        const i = ambientActive.length;
+        let i = ambientActive.length;
         while (i--) {
             const p = ambientActive[i];
             if (!p.active) { ambientActive.splice(i, 1); continue; }
@@ -327,7 +327,7 @@
         }
 
         const initialBtns = document.querySelectorAll('button, .btn, [role="button"]');
-        for (var i = 0; i < initialBtns.length; i++) bindButton(initialBtns[i]);
+        for (let i = 0; i < initialBtns.length; i++) bindButton(initialBtns[i]);
 
         /* V62: MutationObserver 修复 — 不再监听整个 subtree
            只在按钮容器（确认/历史详情弹窗等）有需要时调用 ensureBurstBinding()
@@ -336,9 +336,9 @@
             const appRoot = document.getElementById('app');
             if (appRoot) {
                 const obs = new MutationObserver(function(muts) {
-                    for (var m = 0; m < muts.length; m++) {
+                    for (let m = 0; m < muts.length; m++) {
                         const added = muts[m].addedNodes;
-                        for (var a = 0; a < added.length; a++) {
+                        for (let a = 0; a < added.length; a++) {
                             const node = added[a];
                             if (node.nodeType !== 1) continue;
                             if (node.matches && (
@@ -350,7 +350,7 @@
                             }
                             if (node.querySelectorAll) {
                                 const subBtns = node.querySelectorAll('button, .btn, [role="button"]');
-                                for (var s = 0; s < subBtns.length; s++) bindButton(subBtns[s]);
+                                for (let s = 0; s < subBtns.length; s++) bindButton(subBtns[s]);
                             }
                         }
                     }

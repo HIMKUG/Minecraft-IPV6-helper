@@ -1,93 +1,33 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 383481ed82d002ebbaaea84d79f5966a_ed6a0e427d8511f1baf4525400bff409
-    ReservedCode1: SBqe8t9r9lQ5/ooUytjwmdd3uX9vlHftqolwXiwuxCMMJ4DVNTfK4Z74AUCnUZXX0gewmXmE3CGxHrQyoLGjHp4gUc/m25UrBTZJfeOFmYlEDAdklYBZ9WyMW3maPd4NIT1Ho0xgSRrzVrfP5mlNb5rAlbK6rFaUtGBPYYTaOZ7/jtaj1WEsGi2SShg=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 383481ed82d002ebbaaea84d79f5966a_ed6a0e427d8511f1baf4525400bff409
-    ReservedCode2: SBqe8t9r9lQ5/ooUytjwmdd3uX9vlHftqolwXiwuxCMMJ4DVNTfK4Z74AUCnUZXX0gewmXmE3CGxHrQyoLGjHp4gUc/m25UrBTZJfeOFmYlEDAdklYBZ9WyMW3maPd4NIT1Ho0xgSRrzVrfP5mlNb5rAlbK6rFaUtGBPYYTaOZ7/jtaj1WEsGi2SShg=
----
+# Minecraft IPv6 Connection Tool
 
-# Minecraft IPv6 Helper
-
-> 我的世界 IPv6 联机工具 — 基于 Tauri v2 的 Windows 桌面应用，帮助 Minecraft 玩家通过 IPv6 与好友联机。
+我的世界 IPv6 联机工具 — 一款帮助 Minecraft 玩家通过 IPv6 实现直连联机的桌面工具。
 
 ## 功能
 
-- IPv6 连接地址生成与分享
-- IPv6 网络性能诊断（延迟测试、连通性检测）
-- IPv6 异常处理向导
-- 历史检测记录（加密存储）
-- 中英双语界面 / 亮暗主题切换
-- 粘贴板一键复制连接地址
-- 管理员权限自动提权（UAC）
+- **IPv6 检测** — 检测本机 IPv6 地址和公网可用性
+- **地址生成** — 自动生成带端口的 IPv6 联机地址
+- **网络修复** — 快速/深度修复 IPv6 网络栈异常
+- **性能诊断** — 高精度多维度网络延迟/丢包测量
+- **历史记录** — 加密存储检测与诊断记录
+- **双语界面** — 中文/English 完整支持
+- **Liquid Glass UI** — 毛玻璃 + 粒子特效视觉效果
 
 ## 技术栈
 
-| 层 | 技术 |
-|---|------|
-| 前端 | 原生 HTML / CSS / JS |
-| 后端 | Rust (Tauri v2) |
-| 构建 | Tauri CLI + Cargo |
-| 加密 | ChaCha20-Poly1305 |
-| 特效 | tsparticles + Anime.js |
+- **前端**: 原生 HTML5 / CSS3 / JavaScript（无框架）
+- **后端**: Rust + Tauri v2
+- **视觉效果**: tsParticles + OffscreenCanvas Web Worker
+- **加密**: ChaCha20-Poly1305 AEAD
 
-## 快速开始
-
-### 环境要求
-
-- [Node.js](https://nodejs.org/) 18+
-- [Rust](https://www.rust-lang.org/) 最新稳定版
-- Windows 10/11
-
-### 开发
+## 构建
 
 ```bash
-npm install
-npm run dev
+cd src-tauri
+cargo build --release
 ```
 
-### 构建
+产物位于 `src-tauri/target/release/ipv6-tool.exe`。
 
-```bash
-npm run build
-```
+## 许可
 
-构建产物在 `src-tauri/target/release/` 目录。
-
-## 项目结构
-
-```
-tauri_ipv6/
-├── src/                  # 前端源码
-│   ├── index.html        # 主页面
-│   ├── style.css         # 样式
-│   ├── app.js            # 主逻辑
-│   ├── app-i18n.js       # 国际化
-│   ├── clipboard.js      # 剪贴板
-│   ├── liquid-glass.js   # 玻璃特效
-│   ├── fx-particles.js   # 粒子特效
-│   └── fx-burst-worker.js
-├── src-tauri/            # Rust 后端
-│   ├── src/
-│   │   ├── main.rs       # 入口
-│   │   └── lib.rs        # 核心逻辑
-│   ├── Cargo.toml
-│   └── tauri.conf.json
-├── CHANGELOG.md
-└── LICENSE
-```
-
-## 版本号
-
-当前版本：**v106**
-
-版本号规则：主版本号递增（V90 → V91 → ...），由 `Cargo.toml` 的 `version.major` 统一管理。
-
-## 许可证
-
-[Apache License 2.0](LICENSE)
-
-Copyright (c) 2026 HIMKUG
-*（内容由AI生成，仅供参考）*
+Apache License 2.0 — 详见 [LICENSE](LICENSE)。

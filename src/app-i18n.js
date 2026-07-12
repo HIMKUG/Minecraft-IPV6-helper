@@ -1,7 +1,7 @@
 /* ========================================================================== app-i18n.js - 国际化处理模块 (移植自 ，适配 单体结构) -------------------------------------------------------------------------- 设计原则：纯增量，不改动 任何现有逻辑 / 导航 / DOM 结构。 - 静态文案：index.html 中加 data-i18n 属性的元素，由 applyTranslations 填充 - 动态文案：app.js 中对用户可见的关键字符串改为 t('key') 调用 - 语言偏好：localStorage('ipv6_lang') 持久化 - 版本号：{version} 占位符在 applyTranslations 时由 APP_VERSION 填充 文本层级系统 —— 通过语义 class（em-key / em-link / em-ok / em-danger / em-warn / em-strong / em-italic / em-underline）建立统一 的文字层级，遵循 60-30-10 与"避免五颜六色"。颜色一律走 CSS 变量， 禁止硬编码 hex。 ========================================================================== */
 
 /* 全局版本号（前端单一来源）。后端 lib.rs APP_VERSION 与之保持一致。 显示规则：取主版本号拼 'v'（如 91.0.0 -> v91），不带次/修订号。 静态兜底 'v100' 仅在 Tauri 不可用时使用；运行期由 refreshAppVersionFromTauri() 从 getVersion() 拉取真实版本覆盖，确保后续版本号只需改 Cargo.toml/tauri.conf.json。 */
-let APP_VERSION = 'v106';
+let APP_VERSION = 'v115';
 
 /* * * 运行期从 Tauri 拉取真实版本号，取主版本号拼 'v'（91.0.0 -> v91）， * 覆盖静态兜底 APP_VERSION，并刷新界面文案使其与后端版本一致。 * 任何异常均静默回退到静态兜底。需在 Tauri 全局 API 就绪后调用。 */
 function refreshAppVersionFromTauri() {
@@ -296,6 +296,8 @@ const I18N = {
         'history.status.fail': '✗ 失败',
         'history.type.probe': '诊断',
         'history.type.label': '记录',
+        /* V115: 补充 app.js 调用的缺失 key */
+        'history.record': '记录',
         /* 补充缺失的 history.quality.* 翻译键 */
         'history.quality.good': '优秀',
         'history.quality.warn': '一般',
@@ -656,6 +658,8 @@ const I18N = {
         'history.status.fail': 'Failed',
         'history.type.probe': 'Diagnosis',
         'history.type.label': 'Record',
+        /* V115: 补充 app.js 调用的缺失 key */
+        'history.record': 'Record',
         'history.quality.good': 'Excellent',
         'history.quality.warn': 'Fair',
         'history.quality.bad': 'Poor',

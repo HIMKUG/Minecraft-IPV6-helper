@@ -9,13 +9,13 @@
     'use strict';
     const LG = window.LG = {};
 
-    const rafId = null;
-    const curX = 0, curY = 0;
-    const tgtX = 0, tgtY = 0;
-    const active = false;
+    let rafId = null;
+    let curX = 0, curY = 0;
+    let tgtX = 0, tgtY = 0;
+    let active = false;
     /* 【V48 迭代1.6】脏标记 — mousemove 只更新 tgt，tick 内才 setProperty
        防止高频 mousemove 触发每帧多次 CSS 变量写入（Chrome 会做 style recalc） */
-    const dirty = false;
+    let dirty = false;
 
     function tick() {
         if (active && dirty) {

@@ -1,6 +1,6 @@
 [package]
 name = "ipv6-tool"
-version = "106.0.0"
+version = "115.0.0"
 edition = "2021"
 
 [lib]

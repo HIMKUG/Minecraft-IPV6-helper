@@ -10,9 +10,9 @@
 }
 
 :root {
-    --color-accent: #6366F1;
-    --color-accent-bright: #818CF8;
-    --color-accent-dim: rgba(99, 102, 241, 0.3);
+    --color-accent: #3CB371;
+    --color-accent-bright: #3CB371;
+    --color-accent-dim: rgba(60, 179, 113, 0.3);
     --color-blue: #4A90E2;
     --color-blue-bright: #6BA9E8;
     --color-red: #E81123;
@@ -210,9 +210,9 @@
     text-underline-offset: 2px;
     cursor: pointer;
 }
-.em-ok     { color: var(--color-green); font-weight: 600; }
-.em-danger { color: var(--color-red);   font-weight: 600; }
-.em-warn   { color: var(--color-amber); font-weight: 600; }
+.em-ok     { color: var(--color-green); font-weight: 600; text-shadow: 0 0 8px rgba(52, 211, 153, 0.35); }
+.em-danger { color: var(--color-red);   font-weight: 600; text-shadow: 0 0 8px rgba(239, 68, 68, 0.35); }
+.em-warn   { color: var(--color-amber); font-weight: 600; text-shadow: 0 0 8px rgba(251, 191, 36, 0.35); }
 .em-soft   { color: var(--color-text-secondary); }
 
 html, body {
@@ -488,6 +488,7 @@ body {
 .page {
     contain: style;
     opacity: 0;
+    visibility: hidden;
     position: absolute;
     inset: 0;
     display: flex;
@@ -502,6 +503,7 @@ body {
 }
 .page.active {
     opacity: 1;
+    visibility: visible;
     transform: translateY(0) scale(1);
     filter: blur(0);
     pointer-events: auto;
@@ -792,13 +794,13 @@ body {
     pointer-events: none;
 }
 
-/* 鼠标跟随光晕层 — 在 shine 之上、text 之下 */
+/* 鼠标跟随光晕层 — 在 text 之上，照亮按钮。亮色/暗色主题自适应。 */
 .btn-glow {
     position: absolute;
     width: 160px;
     height: 160px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 0, 0, 0.18) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
     pointer-events: none;
     z-index: 3;
     transform: translate(-50%, -50%);
@@ -808,18 +810,30 @@ body {
                 height 0.5s cubic-bezier(0.175, 0.885, 0.32, 2.2),
                 opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
     opacity: 0;
+    /* 暗色主题下调高强度，避免过曝 */
+}
+[data-theme="dark"] .btn-glow {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+}
+
+.liquidGlass-wrapper:hover .liquidGlass-text {
+    color: var(--color-accent-bright);
+}
+
+[data-theme="dark"] .liquidGlass-wrapper:hover .liquidGlass-text {
+    color: var(--color-accent);
 }
 
 .liquidGlass-wrapper:hover .btn-glow {
     width: 220px;
     height: 220px;
-    opacity: 0.5;
+    opacity: 0.6;
 }
 
 .liquidGlass-wrapper:active .btn-glow {
     width: 320px;
     height: 320px;
-    opacity: 0.8;
+    opacity: 0.9;
     transition: width 0.15s cubic-bezier(0.175, 0.885, 0.32, 2.2),
                 height 0.15s cubic-bezier(0.175, 0.885, 0.32, 2.2),
                 opacity 0.15s cubic-bezier(0.175, 0.885, 0.32, 2.2);
@@ -879,9 +893,6 @@ body {
 /* ===== 按钮变体颜色 ===== */
 
 /* 免责声明按钮 — 红色 */
-.liquidGlass-red .liquidGlass-tint {
-    background: rgba(248, 113, 113, 0.25);
-}
 .liquidGlass-red .liquidGlass-shine {
     box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 1px 1px rgba(220, 38, 38, 0.3);
 }
@@ -895,7 +906,59 @@ body {
 }
 .liquidGlass-green .liquidGlass-text {
     color: var(--color-emerald-800);
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.3), 0 1px 1px rgba(255,255,255,0.3);
 }
+.liquidGlass-green:hover .liquidGlass-tint {
+    background: rgba(16, 185, 129, 0.35);
+}
+.liquidGlass-green:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+[data-theme="dark"] .liquidGlass-green .liquidGlass-text { color: var(--color-green-400); text-shadow: 0 0 10px rgba(74, 222, 128, 0.35); }
+
+/* V113: 蓝色按钮 — 信息/诊断/外链用（基础文字保持默认黑色，悬停变蓝） */
+.liquidGlass-blue .liquidGlass-tint {
+    background: rgba(74, 144, 226, 0.2);
+}
+.liquidGlass-blue .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(74, 144, 226, 0.25);
+}
+.liquidGlass-blue .liquidGlass-text {
+    /* 基础文字保持默认色，不设color */
+}
+.liquidGlass-blue:hover .liquidGlass-text {
+    color: var(--color-blue-800);
+    text-shadow: 0 0 10px rgba(74, 144, 226, 0.4);
+}
+.liquidGlass-blue:hover .liquidGlass-tint {
+    background: rgba(74, 144, 226, 0.32);
+}
+.liquidGlass-blue:hover {
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.3);
+}
+[data-theme="dark"] .liquidGlass-blue:hover .liquidGlass-text { color: var(--color-blue-400); text-shadow: 0 0 12px rgba(96, 165, 250, 0.4); }
+
+/* V113: 琥珀色按钮 — 警告/修复用（基础文字保持默认黑色，悬停变琥珀） */
+.liquidGlass-amber .liquidGlass-tint {
+    background: rgba(245, 158, 11, 0.18);
+}
+.liquidGlass-amber .liquidGlass-shine {
+    box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(245, 158, 11, 0.25);
+}
+.liquidGlass-amber .liquidGlass-text {
+    /* 基础文字保持默认色，不设color */
+}
+.liquidGlass-amber:hover .liquidGlass-text {
+    color: var(--color-amber-700);
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+.liquidGlass-amber:hover .liquidGlass-tint {
+    background: rgba(245, 158, 11, 0.3);
+}
+.liquidGlass-amber:hover {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+}
+[data-theme="dark"] .liquidGlass-amber:hover .liquidGlass-text { color: var(--color-amber-400); text-shadow: 0 0 12px rgba(251, 191, 36, 0.4); }
 
 /* 返回按钮 — 浅红调 */
 .liquidGlass-back .liquidGlass-tint {
@@ -906,6 +969,7 @@ body {
 }
 .liquidGlass-back .liquidGlass-text {
     color: var(--color-red-800);
+    text-shadow: 0 0 8px rgba(185, 28, 28, 0.25);
 }
 
 /* 复制成功 */
@@ -1006,9 +1070,10 @@ body {
 }
 
 /* 【C1 修复】暗色主题下彩色按钮文字改用浅色令牌，保证可读（亮色主题维持深色令牌以对比浅色按钮底） */
-[data-theme="dark"] .liquidGlass-green .liquidGlass-text { color: var(--color-green-400); }
-[data-theme="dark"] .liquidGlass-back .liquidGlass-text { color: var(--color-red-400); }
+[data-theme="dark"] .liquidGlass-back .liquidGlass-text { color: var(--color-red-400); text-shadow: 0 0 10px rgba(248, 113, 113, 0.35); }
 [data-theme="dark"] .btn-pro-test .liquidGlass-text { color: var(--color-lime-400); }
+[data-theme="dark"] .liquidGlass-red .liquidGlass-text { color: var(--color-red-400); text-shadow: 0 0 12px rgba(232, 17, 35, 0.4); }
+[data-theme="dark"] .floating-btn-disclaimer .liquidGlass-text { color: var(--color-red-400); }
 
 .status-bar {
     margin-top: 0;
@@ -2892,7 +2957,7 @@ body:not(.page-home) .developer-name {
 
 .liquidGlass-red .liquidGlass-text {
     color: var(--color-red);
-    text-shadow: 0 1px 2px rgba(232, 17, 35, 0.3);
+    text-shadow: 0 0 10px rgba(232, 17, 35, 0.4), 0 1px 2px rgba(232, 17, 35, 0.3);
 }
 
 .liquidGlass-red:hover .liquidGlass-tint {
@@ -3699,6 +3764,7 @@ div.history-detail-card {
 /* -- 效果 #20：脉冲呼吸 ---- */
 .ef-20 {
     display: inline-block;
+    will-change: transform;
     animation: ef20 2s ease-in-out infinite;
 }
 @keyframes ef20 {

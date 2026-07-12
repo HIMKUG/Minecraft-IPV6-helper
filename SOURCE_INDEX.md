@@ -719,3 +719,48 @@ _人工整理，共 1 个代码块，文件 2 行_
 
 - **L1**　第三方压缩粒子引擎 tsParticles bundle（vendored / minified，单行长文件），未格式化
 
+---
+
+## V115 变更摘要（2026-07-13）
+
+### 背景
+基于 `SOURCE_INDEX.md` 系统扫描，自主发现并修复全部关键代码块中的 bug，同步更新版本号至 V115。
+
+### app.js 修复（8 项）
+| # | Bug | 行号 | 修复 |
+|---|-----|------|------|
+| 1 | **无条件 success 覆盖** — V113 遗留代码使所有检测结果强制成功 | L568-571 | 移除无条件覆盖，仅过滤后无 fail 步骤才置 true |
+| 2 | **`intraStepTimer` 泄漏** — `stopIntraStepProgress()` 定义在 try 块内，finally 无法访问 | L548-555, L741 | 提前到函数顶层声明，finally 块调用清理 |
+| 3 | **`format_ipv6_address` 后端返回 null 时显示"null"** | L811-814 | 增加 null 值检查，回退为 `[addr]:port` |
+| 4 | **`bindGlobalKeyboardShortcuts` 重复绑定** — 返回用户路径重复注册 keydown | L1721 | 添加 `_keydownBound` 防重复 |
+| 5 | **`renderProbeCard` metric 字段 null 时误分类** — `null > 200` 隐式转 false | L1201-1207 | 用 `?? 0` 防御 null 值 |
+| 6 | **catch 块硬编码 9 步循环** — 步骤数不匹配，querySelectorAll 循环内重复调用 | L716-723 | 遍历实际 DOM 步骤项 |
+| 7 | **`cleanCacheDir` 无 result 校验** — 后端 null 时静默报告成功 | L2315-2321 | 增加非空对象校验 |
+| 8 | **`loadAppConfig` catch 清空 records** — 配置加载失败丢弃所有历史 | L2178-2185 | 保留已有 records |
+
+### app-i18n.js 修复（3 项）
+| # | Bug | 修复 |
+|---|-----|------|
+| 1 | 缺失 `history.record` key — app.js 调用但无翻译 | 补充中英文翻译 |
+| 2 | `history.empty` 中英文各一处重复定义 | 保留首次定义 |
+| 3 | 版本号 v113 → v115 | `APP_VERSION = 'v115'` |
+
+### index.html 修复（1 项）
+| # | Bug | 修复 |
+|---|-----|------|
+| 1 | `#history-data-path` 有 `data-i18n`，`applyTranslations()` 覆盖运行时路径 | 移除 data-i18n |
+
+### Rust lib.rs 修复（2 项）
+| # | Bug | 修复 |
+|---|-----|------|
+| 1 | HTTP 延迟值带尾部 `)` — `"1234ms)"` 污染 step latency | `.trim_end_matches(')')` |
+| 2 | `delete_record` 越界时静默忽略 | 返回 `Err` 让前端感知失败 |
+
+### 资源清理
+- 删除 `src/assets/anime.min.js`（已废弃，HTML 注释标注移除但未执行）
+
+### 版本号同步
+- `Cargo.toml`: 115.0.0
+- `tauri.conf.json`: 115.0.0
+- `app-i18n.js`: `APP_VERSION = 'v115'`
+

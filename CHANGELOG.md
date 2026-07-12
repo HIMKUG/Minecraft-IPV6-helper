@@ -4,6 +4,29 @@
 > 版本号单一来源为 `Cargo.toml` 与 `tauri.conf.json`（均为 `X.0.0`）；运行期显示取主版本号拼 `v`，即 `v{X}`，不带 `.0.0`。
 > 后端 `lib.rs::APP_VERSION` 由 `concat!("v", env!("CARGO_PKG_VERSION_MAJOR"))` 派生；前端 `app-i18n.js` 运行期由 `getVersion()` 同步。
 
+## [V115] — 2026-07-13
+### Bug 修复（全量扫描，基于 SOURCE_INDEX.md 系统自主发现）
+- **app.js（8 项）**：
+  - 移除 V113 遗留的无条件 success 覆盖（L568-571），恢复正确的成功/失败逻辑
+  - 修复 `intraStepTimer` 泄漏（`stopIntraStepProgress()` 定义在 try 内，finally 无法访问），提前到顶层声明
+  - `format_ipv6_address` 后端返回 null 时不再显示"null"，回退为 `[addr]:port`
+  - `bindGlobalKeyboardShortcuts` 添加 `_keydownBound` 防重复绑定（返回用户路径）
+  - `renderProbeCard` 增加 metric 字段 null 防御（`?? 0`），防止 null 隐式转 0 导致误分类
+  - catch 块硬编码 9 步循环改为遍历实际 DOM 步骤项数量
+  - `cleanCacheDir` 增加 result 非空对象校验，后端 null 时不再静默报告成功
+  - `loadAppConfig` catch 保留已有 records，配置加载失败不再清空历史
+- **app-i18n.js（3 项）**：
+  - 补充缺失的 `history.record` 翻译键（app.js 调用但无定义）
+  - 删除 `history.empty` 中英文重复定义
+  - 版本号同步至 v115
+- **index.html（1 项）**：
+  - `#history-data-path` 移除 `data-i18n`，防止 `applyTranslations()` 覆盖运行时写入的实际路径
+- **Rust lib.rs（2 项）**：
+  - HTTP 延迟值 `.trim_end_matches(')')`，修复 `"1234ms)"` 污染 step latency 字段
+  - `delete_record` 索引越界时返回 `Err`，不再静默忽略
+- **资源清理**：删除 `src/assets/anime.min.js`（HTML 注释标注移除但未执行）
+- **背景资源**：壁纸由 `壁纸.webp` 替换为 `wallpaper.gif`（动态背景）
+
 ## [V95] — 2026-07-11
 ### 严重 Bug 修复（全按钮点不动）
 - **根因（P0）**：`clipboard.js` 与 `app.js` 均在顶层用 `const` 声明了同名 `CLIPBOARD_TIMEOUT`，两个 classic `<script>` 共享同一全局词法环境，浏览器在**编译 `app.js` 时即抛 `SyntaxError: Identifier 'CLIPBOARD_TIMEOUT' has already been declared`**，导致**整个 `app.js` 一行不执行** → `init()` 永不调用 → 所有按钮无事件绑定 → 表现为"无法点击任何按钮，疑似被透明东西挡住"（先加载的 `fx-particles.js` 仍在跑，点击会迸发粒子动画，造成"有反馈但按钮没反应"的被拦截错觉）。

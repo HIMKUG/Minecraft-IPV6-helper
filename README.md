@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 383481ed82d002ebbaaea84d79f5966a_ed6a0e427d8511f1baf4525400bff409
+    ReservedCode1: SBqe8t9r9lQ5/ooUytjwmdd3uX9vlHftqolwXiwuxCMMJ4DVNTfK4Z74AUCnUZXX0gewmXmE3CGxHrQyoLGjHp4gUc/m25UrBTZJfeOFmYlEDAdklYBZ9WyMW3maPd4NIT1Ho0xgSRrzVrfP5mlNb5rAlbK6rFaUtGBPYYTaOZ7/jtaj1WEsGi2SShg=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 383481ed82d002ebbaaea84d79f5966a_ed6a0e427d8511f1baf4525400bff409
+    ReservedCode2: SBqe8t9r9lQ5/ooUytjwmdd3uX9vlHftqolwXiwuxCMMJ4DVNTfK4Z74AUCnUZXX0gewmXmE3CGxHrQyoLGjHp4gUc/m25UrBTZJfeOFmYlEDAdklYBZ9WyMW3maPd4NIT1Ho0xgSRrzVrfP5mlNb5rAlbK6rFaUtGBPYYTaOZ7/jtaj1WEsGi2SShg=
+---
+
 # Minecraft IPv6 Helper
 
 > 我的世界 IPv6 联机工具 — 基于 Tauri v2 的 Windows 桌面应用，帮助 Minecraft 玩家通过 IPv6 与好友联机。
@@ -79,3 +90,4 @@ tauri_ipv6/
 [Apache License 2.0](LICENSE)
 
 Copyright (c) 2026 HIMKUG
+*（内容由AI生成，仅供参考）*

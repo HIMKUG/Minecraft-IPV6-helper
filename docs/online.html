@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>在线使用 - Minecraft IPv6 Helper</title>
+  <!-- Tight CSP: this page is fully self-contained (no scripts, no external
+       resources), so we lock everything down except the inline <style> block. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'" />
+  <style>
+    :root {
+      --bg: #141414;
+      --green: #2ef22e;
+      --fg: #f5f5f5;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      overflow: hidden;
+    }
+    .placeholder {
+      font-size: clamp(3rem, 18vw, 14rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      color: var(--fg);
+      /* 与主页品牌绿色火焰光晕呼应 */
+      filter: drop-shadow(0 0 24px rgba(46, 242, 46, 0.45))
+              drop-shadow(0 0 48px rgba(46, 242, 46, 0.25));
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- 占位空白页：后续在此填充“在线使用”相关内容 -->
+  <div class="placeholder">敬请期待</div>
+</body>
+</html>
